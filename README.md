@@ -1,7 +1,7 @@
 # dua - Disk Usage Analyzer
 
-[![CI](https://github.com/fukasawah/dua/actions/workflows/ci.yml/badge.svg)](https://github.com/fukasawah/dua/actions/workflows/ci.yml)
-[![Release](https://github.com/fukasawah/dua/actions/workflows/release.yml/badge.svg)](https://github.com/fukasawah/dua/actions/workflows/release.yml)
+[![CI](https://github.com/fukasawah/dua/actions/workflows/ci.yml/badge.svg)](https://github.com/fukasawah/dua/actions)
+[![Release](https://github.com/fukasawah/dua/actions/workflows/release.yml/badge.svg)](https://github.com/fukasawah/dua/releases)
 
 Fast command-line tool to analyze disk usage and find space hogs. Written in Rust.
 
