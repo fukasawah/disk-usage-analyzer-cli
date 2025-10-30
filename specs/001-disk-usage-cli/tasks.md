@@ -24,15 +24,15 @@
 
 Purpose: Project initialization and basic structure
 
-- [ ] T001 Create Rust binary crate with modules: initialize Cargo manifest at `/workspaces/rs-disk-usage/Cargo.toml`
-- [ ] T002 Add dependencies in `/workspaces/rs-disk-usage/Cargo.toml`: `serde`, `serde_json`, `parquet`, and conditional `windows-sys` for Windows targets
-- [ ] T003 [P] Create module structure per plan in `src/`: `src/lib.rs`, `src/cli/mod.rs`, `src/models/mod.rs`, `src/services/traverse.rs`, `src/services/aggregate.rs`, `src/services/size.rs`, `src/io/snapshot.rs`
-- [ ] T004 [P] Scaffold binary entry point at `src/bin/dux.rs` with basic `main()` and `--help` placeholder
-- [ ] T005 [P] Create test directories with placeholder files: `tests/unit/mod.rs`, `tests/integration/mod.rs`, `tests/contract/mod.rs`
-- [ ] T006 Configure formatting and linting: add `/workspaces/rs-disk-usage/rustfmt.toml` and `/workspaces/rs-disk-usage/.cargo/config.toml` (set clippy lint levels)
-- [ ] T007 Add `.gitignore` entries for Rust target and snapshot files at `/workspaces/rs-disk-usage/.gitignore`
+- [X] T001 Create Rust binary crate with modules: initialize Cargo manifest at `/workspaces/rs-disk-usage/Cargo.toml`
+- [X] T002 Add dependencies in `/workspaces/rs-disk-usage/Cargo.toml`: `serde`, `serde_json`, `parquet`, and conditional `windows-sys` for Windows targets
+- [X] T003 [P] Create module structure per plan in `src/`: `src/lib.rs`, `src/cli/mod.rs`, `src/models/mod.rs`, `src/services/traverse.rs`, `src/services/aggregate.rs`, `src/services/size.rs`, `src/io/snapshot.rs`
+- [X] T004 [P] Scaffold binary entry point at `src/bin/dux.rs` with basic `main()` and `--help` placeholder
+- [X] T005 [P] Create test directories with placeholder files: `tests/unit/mod.rs`, `tests/integration/mod.rs`, `tests/contract/mod.rs`
+- [X] T006 Configure formatting and linting: add `/workspaces/rs-disk-usage/rustfmt.toml` and `/workspaces/rs-disk-usage/.cargo/config.toml` (set clippy lint levels)
+- [X] T007 Add `.gitignore` entries for Rust target and snapshot files at `/workspaces/rs-disk-usage/.gitignore`
 
-Checkpoint: Repo builds with cargo build and runs cargo clippy cleanly (no new warnings in scaffolding).
+Checkpoint: Repo builds with cargo build and runs cargo clippy cleanly (no new warnings in scaffolding). ✓ COMPLETE
 
 ---
 
@@ -42,21 +42,21 @@ Purpose: Core infrastructure that MUST be complete before ANY user story can be 
 
 ⚠️ CRITICAL: No user story work can begin until this phase is complete
 
-- [ ] T008 Implement core data models in `src/models/mod.rs` with serde derives: `DirectoryEntry`, `SnapshotMeta`, `ErrorItem`
-- [ ] T009 [P] Implement size basis computation (Unix) in `src/services/size.rs` using `MetadataExt` blocks (physical) and `len()` (logical)
-- [ ] T010 [P] Implement size basis computation (Windows, cfg) in `src/services/size.rs` using `GetCompressedFileSizeW` via `windows-sys`
-- [ ] T011 Implement filesystem boundary detection (Unix) in `src/services/traverse.rs` using `MetadataExt::dev`
-- [ ] T012 [P] Implement filesystem boundary detection (Windows, cfg) in `src/services/traverse.rs` comparing starting volume vs entry volume
-- [ ] T013 Implement hardlink deduplication policy (default: dedupe) with `(dev,inode)` tracking in `src/services/traverse.rs` (Unix) and equivalent on Windows
-- [ ] T014 Implement traversal without following symlinks in `src/services/traverse.rs` using `std::fs::read_dir` and `symlink_metadata`
-- [ ] T015 Implement streaming aggregation primitives in `src/services/aggregate.rs` to compute per-directory totals post-order without retaining entire tree
-- [ ] T016 Define public facade in `src/lib.rs` with documented contracts: `scan_summary(root, opts) -> Result<Summary, Error>` and types
-- [ ] T017 [P] Implement error handling strategy and custom error enum in `src/lib.rs` and reuse in services
-- [ ] T018 [P] Implement human-readable size formatter helper in `src/services/format.rs`
-- [ ] T019 Add logging/progress hooks (no-op by default) and stderr diagnostics toggles in `src/lib.rs`
-- [ ] T020 Create minimal developer fixtures under `tests/fixtures/` for deterministic directory structures
+- [X] T008 Implement core data models in `src/models/mod.rs` with serde derives: `DirectoryEntry`, `SnapshotMeta`, `ErrorItem`
+- [X] T009 [P] Implement size basis computation (Unix) in `src/services/size.rs` using `MetadataExt` blocks (physical) and `len()` (logical)
+- [X] T010 [P] Implement size basis computation (Windows, cfg) in `src/services/size.rs` using `GetCompressedFileSizeW` via `windows-sys`
+- [X] T011 Implement filesystem boundary detection (Unix) in `src/services/traverse.rs` using `MetadataExt::dev`
+- [X] T012 [P] Implement filesystem boundary detection (Windows, cfg) in `src/services/traverse.rs` comparing starting volume vs entry volume
+- [X] T013 Implement hardlink deduplication policy (default: dedupe) with `(dev,inode)` tracking in `src/services/traverse.rs` (Unix) and equivalent on Windows
+- [X] T014 Implement traversal without following symlinks in `src/services/traverse.rs` using `std::fs::read_dir` and `symlink_metadata`
+- [X] T015 Implement streaming aggregation primitives in `src/services/aggregate.rs` to compute per-directory totals post-order without retaining entire tree
+- [X] T016 Define public facade in `src/lib.rs` with documented contracts: `scan_summary(root, opts) -> Result<Summary, Error>` and types
+- [X] T017 [P] Implement error handling strategy and custom error enum in `src/lib.rs` and reuse in services
+- [X] T018 [P] Implement human-readable size formatter helper in `src/services/format.rs`
+- [X] T019 Add logging/progress hooks (no-op by default) and stderr diagnostics toggles in `src/lib.rs`
+- [X] T020 Create minimal developer fixtures under `tests/fixtures/` for deterministic directory structures
 
-Checkpoint: Foundation ready - user story implementation can now begin in parallel
+Checkpoint: Foundation ready - user story implementation can now begin in parallel ✓ COMPLETE
 
 ---
 
@@ -68,22 +68,22 @@ Independent Test: Against a known fixture, verify sizes and counts match expecte
 
 ### Tests for User Story 1
 
-- [ ] T021 [P] [US1] Unit tests for aggregation and size basis conversions in `tests/unit/aggregate_tests.rs`
-- [ ] T022 [P] [US1] Unit tests for traversal filtering (no symlink follow, same FS) in `tests/unit/traverse_tests.rs`
-- [ ] T023 [P] [US1] CLI/Integration test for `dux scan <PATH>` happy path in `tests/integration/test_scan.rs`
-- [ ] T024 [P] [US1] CLI/Integration test for invalid path and exit codes in `tests/integration/test_errors.rs`
-- [ ] T025 [P] [US1] JSON output smoke test for `--json` shape (fields only) in `tests/contract/test_json_shape.rs`
+- [X] T021 [P] [US1] Unit tests for aggregation and size basis conversions in `tests/unit/aggregate_tests.rs`
+- [X] T022 [P] [US1] Unit tests for traversal filtering (no symlink follow, same FS) in `tests/unit/traverse_tests.rs`
+- [X] T023 [P] [US1] CLI/Integration test for `dux scan <PATH>` happy path in `tests/integration/test_scan.rs`
+- [X] T024 [P] [US1] CLI/Integration test for invalid path and exit codes in `tests/integration/test_errors.rs`
+- [X] T025 [P] [US1] JSON output smoke test for `--json` shape (fields only) in `tests/contract/test_json_shape.rs`
 
 ### Implementation for User Story 1
 
-- [ ] T026 [P] [US1] Implement CLI arg parsing for `scan <PATH>` with flags `--basis`, `--top`, `--sort`, `--json` in `src/bin/dux.rs`
-- [ ] T027 [US1] Wire CLI to lib facade `scan_summary` and print human-readable output in `src/bin/dux.rs`
-- [ ] T028 [US1] Implement JSON output branch using `serde_json` in `src/bin/dux.rs`
-- [ ] T029 [US1] Implement sorting and top-K limiting in `src/services/aggregate.rs`
-- [ ] T030 [US1] Implement exit codes mapping (0 ok; 2 invalid input; 3 partial failures; 4 I/O/system) in `src/bin/dux.rs`
-- [ ] T031 [US1] Ensure stderr diagnostics for errors and keep stdout clean for content/JSON in `src/bin/dux.rs`
+- [X] T026 [P] [US1] Implement CLI arg parsing for `scan <PATH>` with flags `--basis`, `--top`, `--sort`, `--json` in `src/bin/dux.rs`
+- [X] T027 [US1] Wire CLI to lib facade `scan_summary` and print human-readable output in `src/bin/dux.rs`
+- [X] T028 [US1] Implement JSON output branch using `serde_json` in `src/bin/dux.rs`
+- [X] T029 [US1] Implement sorting and top-K limiting in `src/services/aggregate.rs`
+- [X] T030 [US1] Implement exit codes mapping (0 ok; 2 invalid input; 3 partial failures; 4 I/O/system) in `src/bin/dux.rs`
+- [X] T031 [US1] Ensure stderr diagnostics for errors and keep stdout clean for content/JSON in `src/bin/dux.rs`
 
-Checkpoint: User Story 1 fully functional and independently testable
+Checkpoint: User Story 1 fully functional and independently testable ✓ COMPLETE
 
 ---
 
@@ -95,16 +95,16 @@ Independent Test: Re-aggregation for a subdirectory matches running scan with th
 
 ### Tests for User Story 2
 
-- [ ] T032 [P] [US2] Unit tests for depth limiting behavior in `tests/unit/depth_tests.rs`
-- [ ] T033 [P] [US2] Integration test for `dux drill <ROOT> <SUBDIR>` equivalence to `scan <SUBDIR>` in `tests/integration/test_drill.rs`
+- [X] T032 [P] [US2] Unit tests for depth limiting behavior in `tests/unit/depth_tests.rs`
+- [X] T033 [P] [US2] Integration test for `dux drill <ROOT> <SUBDIR>` equivalence to `scan <SUBDIR>` in `tests/integration/test_drill.rs`
 
 ### Implementation for User Story 2
 
-- [ ] T034 [P] [US2] Extend CLI to add `drill <ROOT> <SUBDIR>` subcommand and `--max-depth` in `src/bin/dux.rs`
-- [ ] T035 [US2] Add re-rooting logic and depth limiting in `src/lib.rs` and `src/services/traverse.rs`
-- [ ] T036 [US2] Ensure sorting and top-K still apply to drill output in `src/services/aggregate.rs`
+- [X] T034 [P] [US2] Extend CLI to add `drill <ROOT> <SUBDIR>` subcommand and `--max-depth` in `src/bin/dux.rs`
+- [X] T035 [US2] Add re-rooting logic and depth limiting in `src/lib.rs` and `src/services/traverse.rs`
+- [X] T036 [US2] Ensure sorting and top-K still apply to drill output in `src/services/aggregate.rs`
 
-Checkpoint: User Stories 1 AND 2 work independently
+Checkpoint: User Stories 1 AND 2 work independently ✓ COMPLETE
 
 ---
 
@@ -116,18 +116,18 @@ Independent Test: Save→load→display reproduces the same results as original 
 
 ### Tests for User Story 3
 
-- [ ] T037 [P] [US3] Snapshot write/read round-trip test with fixtures in `tests/integration/test_snapshot_roundtrip.rs`
-- [ ] T038 [P] [US3] JSON output from `view --from-snapshot` matches schema fields in `tests/contract/test_snapshot_json.rs`
-- [ ] T039 [US3] Error handling test for invalid/corrupt snapshot file in `tests/integration/test_snapshot_errors.rs`
+- [X] T037 [P] [US3] Snapshot write/read round-trip test with fixtures in `tests/integration/test_snapshot_roundtrip.rs`
+- [X] T038 [P] [US3] JSON output from `view --from-snapshot` matches schema fields in `tests/contract/test_snapshot_json.rs`
+- [X] T039 [US3] Error handling test for invalid/corrupt snapshot file in `tests/integration/test_snapshot_errors.rs`
 
 ### Implementation for User Story 3
 
-- [ ] T040 [P] [US3] Implement Parquet schema and writer in `src/io/snapshot.rs` per data-model tables (entries/meta/errors)
-- [ ] T041 [P] [US3] Implement Parquet reader and filtering/sorting utilities in `src/io/snapshot.rs`
-- [ ] T042 [US3] Extend `scan` to accept `--snapshot <FILE.parquet>` and write snapshot in `src/bin/dux.rs`
-- [ ] T043 [US3] Add `view --from-snapshot <FILE.parquet>` subcommand in `src/bin/dux.rs`
+- [X] T040 [P] [US3] Implement Parquet schema and writer in `src/io/snapshot.rs` per data-model tables (entries/meta/errors)
+- [X] T041 [P] [US3] Implement Parquet reader and filtering/sorting utilities in `src/io/snapshot.rs`
+- [X] T042 [US3] Extend `scan` to accept `--snapshot <FILE.parquet>` and write snapshot in `src/bin/dux.rs`
+- [X] T043 [US3] Add `view --from-snapshot <FILE.parquet>` subcommand in `src/bin/dux.rs`
 
-Checkpoint: Snapshot workflows validated and independently testable
+Checkpoint: Snapshot workflows validated and independently testable ✓ COMPLETE
 
 ---
 
@@ -139,17 +139,17 @@ Independent Test: On a synthesized large fixture, traversal completes; memory an
 
 ### Tests for User Story 4
 
-- [ ] T044 [P] [US4] Performance smoke test harness (bounded runtime) in `tests/integration/test_perf_smoke.rs`
-- [ ] T045 [US4] Resilience test: simulate permission errors and file churn; ensure non-zero error count but overall completion in `tests/integration/test_resilience.rs`
+- [X] T044 [P] [US4] Performance smoke test harness (bounded runtime) in `tests/integration/test_perf_smoke.rs`
+- [X] T045 [US4] Resilience test: simulate permission errors and file churn; ensure non-zero error count but overall completion in `tests/integration/test_resilience.rs`
 
 ### Implementation for User Story 4
 
-- [ ] T046 [P] [US4] Add error aggregation and representative examples in Summary (limit count) in `src/lib.rs`
-- [ ] T047 [US4] Optimize traversal memory footprint (small LRU for parent accumulation) in `src/services/aggregate.rs`
-- [ ] T048 [US4] Implement optional cap/fallback for hardlink dedupe structure to avoid unbounded growth in `src/services/traverse.rs`
-- [ ] T049 [US4] Add `--no-progress` and `--verbose` toggles with lightweight progress estimates in `src/bin/dux.rs`
+- [X] T046 [P] [US4] Add error aggregation and representative examples in Summary (limit count) in `src/lib.rs`
+- [X] T047 [US4] Optimize traversal memory footprint (small LRU for parent accumulation) in `src/services/aggregate.rs`
+- [X] T048 [US4] Implement optional cap/fallback for hardlink dedupe structure to avoid unbounded growth in `src/services/traverse.rs`
+- [X] T049 [US4] Add `--no-progress` and `--verbose` toggles with lightweight progress estimates in `src/bin/dux.rs`
 
-Checkpoint: All user stories independently functional; stability validated
+Checkpoint: All user stories independently functional; stability validated ✓ COMPLETE
 
 ---
 
@@ -157,12 +157,14 @@ Checkpoint: All user stories independently functional; stability validated
 
 Purpose: Improvements that affect multiple user stories
 
-- [ ] T050 [P] Documentation updates in `specs/001-disk-usage-cli/quickstart.md` and root `README.md`
-- [ ] T051 Code cleanup and refactoring passes across `src/` modules (no behavior change)
-- [ ] T052 Performance profiling notes and TODOs captured in `specs/001-disk-usage-cli/research.md`
-- [ ] T053 [P] Additional unit tests to reach coverage targets in `tests/unit/`
-- [ ] T054 Security/robustness hardening for path handling and output encoding (audit) across `src/`
-- [ ] T055 Run quickstart.md validation by executing documented commands locally; adjust examples in `specs/001-disk-usage-cli/quickstart.md`
+- [X] T050 [P] Documentation updates in `specs/001-disk-usage-cli/quickstart.md` and root `README.md`
+- [X] T051 Code cleanup and refactoring passes across `src/` modules (no behavior change)
+- [X] T052 Performance profiling notes and TODOs captured in `specs/001-disk-usage-cli/research.md`
+- [X] T053 [P] Additional unit tests to reach coverage targets in `tests/unit/`
+- [X] T054 Security/robustness hardening for path handling and output encoding (audit) across `src/`
+- [X] T055 Run quickstart.md validation by executing documented commands locally; adjust examples in `specs/001-disk-usage-cli/quickstart.md`
+
+✓ ALL PHASES COMPLETE
 
 ---
 
