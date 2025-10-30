@@ -4,7 +4,7 @@ Auto-generated from all feature plans. Last updated: 2025-10-30
 
 ## Active Technologies
 
-- Rust 1.77+ (Edition 2021) (001-disk-usage-cli)
+- Rust 1.90+ (Edition 2024) (001-disk-usage-cli)
 
 ## Project Structure
 
@@ -20,11 +20,11 @@ cargo clippy
 
 ## Code Style
 
-Rust 1.77+ (Edition 2021): Follow standard conventions
+Rust 1.90+ (Edition 2024): Follow standard conventions
 
 ## Recent Changes
 
-- 001-disk-usage-cli: Added Rust 1.77+ (Edition 2021)
+- 001-disk-usage-cli: Added Rust 1.90+ (Edition 2024)
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
