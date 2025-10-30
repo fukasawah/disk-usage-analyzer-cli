@@ -246,7 +246,7 @@ fn print_entries_recursive(
         let path_display = if is_dir && !path.ends_with('/') {
             format!("{path}/")
         } else {
-            path.to_string()
+            path.clone()
         };
 
         // Color based on percentage
