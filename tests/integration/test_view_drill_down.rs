@@ -24,7 +24,7 @@ mod tests {
 
         // Scan the root
         let root_summary = dua::scan_summary(root, &opts).unwrap();
-        
+
         // Scan the subdirectory directly
         let subdir_path = root.join("subdir");
         let subdir_summary = dua::scan_summary(&subdir_path, &opts).unwrap();
@@ -32,7 +32,7 @@ mod tests {
         // Both should succeed
         assert!(!root_summary.entries.is_empty());
         assert!(!subdir_summary.entries.is_empty());
-        
+
         // The subdirectory scan should have the subdir as root
         assert_eq!(subdir_summary.root, subdir_path.to_string_lossy());
     }
@@ -56,10 +56,10 @@ mod tests {
 
         let subdir = root.join("a");
         let result = dua::scan_summary(&subdir, &opts);
-        
+
         assert!(result.is_ok());
         let summary = result.unwrap();
-        
+
         // Check depth constraint
         for entry in &summary.entries {
             assert!(entry.depth <= 2);

@@ -2,8 +2,8 @@
 
 #[cfg(test)]
 mod tests {
-    use dua::io::snapshot::{write_snapshot, read_snapshot};
-    use dua::models::{DirectoryEntry, SnapshotMeta, ErrorItem};
+    use dua::io::snapshot::{read_snapshot, write_snapshot};
+    use dua::models::{DirectoryEntry, ErrorItem, SnapshotMeta};
     use tempfile::NamedTempFile;
 
     #[test]
@@ -40,21 +40,27 @@ mod tests {
             },
         ];
 
-        let errors = vec![
-            ErrorItem {
-                path: "/test/root/forbidden".to_string(),
-                code: "EACCES".to_string(),
-                message: "Permission denied".to_string(),
-            },
-        ];
+        let errors = vec![ErrorItem {
+            path: "/test/root/forbidden".to_string(),
+            code: "EACCES".to_string(),
+            message: "Permission denied".to_string(),
+        }];
 
         // Write snapshot
         let write_result = write_snapshot(snapshot_path, &meta, &entries, &errors);
-        assert!(write_result.is_ok(), "Failed to write snapshot: {:?}", write_result.err());
+        assert!(
+            write_result.is_ok(),
+            "Failed to write snapshot: {:?}",
+            write_result.err()
+        );
 
         // Read snapshot
         let read_result = read_snapshot(snapshot_path);
-        assert!(read_result.is_ok(), "Failed to read snapshot: {:?}", read_result.err());
+        assert!(
+            read_result.is_ok(),
+            "Failed to read snapshot: {:?}",
+            read_result.err()
+        );
 
         let (read_meta, read_entries, read_errors) = read_result.unwrap();
 

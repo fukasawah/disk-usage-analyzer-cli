@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use dua::{ScanOptions, SizeBasis, HardlinkPolicy};
+    use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
 

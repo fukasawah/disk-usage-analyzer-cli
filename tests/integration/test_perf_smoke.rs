@@ -17,7 +17,7 @@ mod tests {
         for i in 0..100 {
             let dir = root.join(format!("dir{i:03}"));
             fs::create_dir_all(&dir).unwrap();
-            
+
             for j in 0..10 {
                 let file_path = dir.join(format!("file{j}.txt"));
                 fs::write(file_path, format!("Content {i}-{j}")).unwrap();
@@ -34,19 +34,19 @@ mod tests {
         let duration = start.elapsed();
 
         assert!(result.is_ok(), "Scan failed: {:?}", result.err());
-        
+
         let summary = result.unwrap();
         assert!(!summary.entries.is_empty());
-        
+
         // Performance requirement: should complete in reasonable time
         // For 1000 files, expect < 5 seconds (very conservative)
-        assert!(
-            duration.as_secs() < 5,
-            "Scan took too long: {:?}",
+        assert!(duration.as_secs() < 5, "Scan took too long: {duration:?}");
+
+        println!(
+            "Performance: scanned {} entries in {:?}",
+            summary.entries.len(),
             duration
         );
-        
-        println!("Performance: scanned {} entries in {:?}", summary.entries.len(), duration);
     }
 
     #[test]
@@ -64,7 +64,7 @@ mod tests {
 
         let opts = ScanOptions {
             basis: SizeBasis::Logical,
-            max_depth: None,  // No limit
+            max_depth: None, // No limit
             ..Default::default()
         };
 
@@ -74,11 +74,11 @@ mod tests {
 
         assert!(result.is_ok());
         let summary = result.unwrap();
-        
+
         // Should handle deep nesting
         let max_depth = summary.entries.iter().map(|e| e.depth).max().unwrap_or(0);
         assert!(max_depth >= 10, "Expected deeper traversal");
-        
-        println!("Deep nesting: max depth {} in {:?}", max_depth, duration);
+
+        println!("Deep nesting: max depth {max_depth} in {duration:?}");
     }
 }

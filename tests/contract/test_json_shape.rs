@@ -23,7 +23,7 @@ fn test_json_output_fields() {
     // Verify summary structure
     assert!(!summary.root.is_empty());
     assert!(summary.entries.is_empty() || !summary.entries.is_empty());
-    
+
     // Verify each entry has required fields
     for entry in &summary.entries {
         assert!(!entry.path.is_empty());

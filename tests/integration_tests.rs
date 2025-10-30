@@ -1,12 +1,13 @@
 // Integration tests entry point
+
 mod integration {
-    mod test_scan;
     mod test_errors;
-    mod test_view_drill_down;
-    mod test_snapshot_roundtrip;
-    mod test_snapshot_errors;
     mod test_perf_smoke;
     mod test_resilience;
+    mod test_scan;
+    mod test_snapshot_errors;
+    mod test_snapshot_roundtrip;
+    mod test_view_drill_down;
 }
 
 mod contract {
@@ -16,6 +17,6 @@ mod contract {
 
 mod unit {
     mod aggregate_tests;
-    mod traverse_tests;
     mod depth_tests;
+    mod traverse_tests;
 }

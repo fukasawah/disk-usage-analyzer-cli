@@ -88,7 +88,7 @@ impl TraversalContext {
     #[allow(unused_variables)]
     fn get_size(&self, path: &Path, metadata: &fs::Metadata) -> u64 {
         use crate::services::size;
-        
+
         match self.options.basis {
             SizeBasis::Logical => size::logical_size(metadata),
             SizeBasis::Physical => {
@@ -137,7 +137,7 @@ pub fn traverse_directory<P: AsRef<Path>>(
     context: &mut TraversalContext,
 ) -> std::io::Result<u64> {
     let root = root.as_ref();
-    
+
     // Get root metadata
     let root_metadata = match fs::symlink_metadata(root) {
         Ok(m) => m,
@@ -153,21 +153,20 @@ pub fn traverse_directory<P: AsRef<Path>>(
     }
 
     // Start recursive traversal
-    traverse_recursive(root, root, 0, context)
+    traverse_recursive(root, 0, context)
 }
 
 /// Recursive traversal implementation
 fn traverse_recursive(
-    root: &Path,
     current: &Path,
     depth: u16,
     context: &mut TraversalContext,
 ) -> std::io::Result<u64> {
     // Check depth limit
-    if let Some(max_depth) = context.max_depth {
-        if depth > max_depth {
-            return Ok(0);
-        }
+    if let Some(max_depth) = context.max_depth
+        && depth > max_depth
+    {
+        return Ok(0);
     }
 
     // Get metadata (without following symlinks)
@@ -185,12 +184,12 @@ fn traverse_recursive(
     }
 
     // Check filesystem boundary
-    if !context.options.cross_filesystem {
-        if let Some(root_dev) = context.root_device {
-            let current_dev = get_device_id(&metadata);
-            if current_dev != root_dev {
-                return Ok(0);
-            }
+    if !context.options.cross_filesystem
+        && let Some(root_dev) = context.root_device
+    {
+        let current_dev = get_device_id(&metadata);
+        if current_dev != root_dev {
+            return Ok(0);
         }
     }
 
@@ -243,11 +242,11 @@ fn traverse_recursive(
                 };
                 total_size += file_size;
                 file_count += 1;
-                
+
                 // Record file as an entry too (if within depth limit)
                 let file_depth = depth + 1;
-                let within_depth_limit = context.max_depth.map_or(true, |max| file_depth <= max);
-                
+                let within_depth_limit = context.max_depth.is_none_or(|max| file_depth <= max);
+
                 if within_depth_limit {
                     let parent_path_str = current.to_string_lossy().to_string();
                     let file_entry = DirectoryEntry {
@@ -261,16 +260,14 @@ fn traverse_recursive(
                     context.entries.insert(entry_path, file_entry);
                 }
             } else if entry_metadata.is_dir() {
-                let subdir_size = traverse_recursive(root, &entry_path, depth + 1, context)?;
+                let subdir_size = traverse_recursive(&entry_path, depth + 1, context)?;
                 total_size += subdir_size;
                 dir_count += 1;
             }
         }
 
         // Record this directory entry
-        let parent_path = current
-            .parent()
-            .map(|p| p.to_string_lossy().to_string());
+        let parent_path = current.parent().map(|p| p.to_string_lossy().to_string());
 
         let entry = DirectoryEntry {
             path: current.to_string_lossy().to_string(),

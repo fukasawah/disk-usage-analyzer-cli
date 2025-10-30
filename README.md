@@ -66,18 +66,38 @@ cargo build --release --target x86_64-unknown-linux-musl
 
 ## Development
 
-Run tests:
+### Setup Git Hooks
+
+Enable pre-commit hooks (runs `fmt` and `clippy` before commit):
+```bash
+git config core.hooksPath hooks
+```
+
+### Run Tests
+
 ```bash
 cargo test
 ```
 
-Check code quality:
+### Check Code Quality
+
+Format code:
 ```bash
-cargo clippy
+cargo fmt
+```
+
+Run linter:
+```bash
+cargo clippy --all-targets --all-features
+```
+
+Check formatting without modifying files:
+```bash
 cargo fmt -- --check
 ```
 
-Measure test coverage:
+### Measure Test Coverage
+
 ```bash
 cargo install cargo-llvm-cov
 cargo llvm-cov --html --open

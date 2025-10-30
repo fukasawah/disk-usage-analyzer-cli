@@ -29,8 +29,9 @@ pub fn physical_size_from_metadata(metadata: &Metadata) -> u64 {
 #[cfg(windows)]
 pub fn physical_size_from_path(path: &Path) -> std::io::Result<u64> {
     use std::os::windows::ffi::OsStrExt;
-    use windows_sys::Win32::Foundation::INVALID_FILE_SIZE;
     use windows_sys::Win32::Storage::FileSystem::GetCompressedFileSizeW;
+
+    const INVALID_FILE_SIZE: u32 = 0xFFFFFFFF;
 
     // Convert path to wide string (UTF-16)
     let wide: Vec<u16> = path

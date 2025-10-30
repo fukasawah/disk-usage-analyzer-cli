@@ -5,11 +5,11 @@
 //! and snapshot persistence via Parquet format.
 
 pub mod cli;
+pub mod io;
 pub mod models;
 pub mod services;
-pub mod io;
 
-pub use models::{DirectoryEntry, SnapshotMeta, ErrorItem};
+pub use models::{DirectoryEntry, ErrorItem, SnapshotMeta};
 
 use std::path::Path;
 use std::result;
@@ -100,29 +100,33 @@ pub struct Summary {
 /// A Summary containing directory entries and any errors encountered
 pub fn scan_summary<P: AsRef<Path>>(root: P, opts: &ScanOptions) -> Result<Summary> {
     let root_path = root.as_ref().to_string_lossy().to_string();
-    
+
     if !root.as_ref().exists() {
-        return Err(Error::InvalidInput(format!("Path does not exist: {root_path}")));
+        return Err(Error::InvalidInput(format!(
+            "Path does not exist: {root_path}"
+        )));
     }
-    
+
     if !root.as_ref().is_dir() {
-        return Err(Error::InvalidInput(format!("Path is not a directory: {root_path}")));
+        return Err(Error::InvalidInput(format!(
+            "Path is not a directory: {root_path}"
+        )));
     }
-    
+
     let started_at = std::time::SystemTime::now();
-    
+
     // Create traversal context
     let mut context = services::traverse::TraversalContext::new(opts.clone(), opts.max_depth);
-    
+
     // Traverse the directory tree
     let _ = services::traverse::traverse_directory(&root, &mut context)?;
-    
+
     // Extract entries and errors
     let entries: Vec<DirectoryEntry> = context.entries.into_values().collect();
     let errors = context.errors;
-    
+
     let finished_at = std::time::SystemTime::now();
-    
+
     Ok(Summary {
         root: root_path,
         entries,

@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     use dua::models::DirectoryEntry;
-    use dua::services::aggregate::{sort_and_limit, SortBy};
+    use dua::services::aggregate::{SortBy, sort_and_limit};
 
     #[test]
     fn test_sort_by_size() {

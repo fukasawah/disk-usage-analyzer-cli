@@ -91,7 +91,7 @@ fn parse_scan_args(args: &[String]) -> Result<ScanArgs, String> {
                 if i >= args.len() {
                     return Err("--basis requires a value".to_string());
                 }
-                scan_args.basis = args[i].clone();
+                scan_args.basis.clone_from(&args[i]);
             }
             "--snapshot" => {
                 i += 1;
@@ -153,7 +153,7 @@ fn parse_drill_args(args: &[String]) -> Result<DrillArgs, String> {
                 if i >= args.len() {
                     return Err("--basis requires a value".to_string());
                 }
-                basis = args[i].clone();
+                basis.clone_from(&args[i]);
             }
             "--top" => {
                 i += 1;
@@ -169,7 +169,7 @@ fn parse_drill_args(args: &[String]) -> Result<DrillArgs, String> {
                 if i >= args.len() {
                     return Err("--sort requires a value".to_string());
                 }
-                sort = args[i].clone();
+                sort.clone_from(&args[i]);
             }
             "--json" => {
                 json = true;
@@ -248,7 +248,7 @@ fn parse_view_args(args: &[String]) -> Result<ViewArgs, String> {
                 if i >= args.len() {
                     return Err("--sort requires a value".to_string());
                 }
-                sort = args[i].clone();
+                sort.clone_from(&args[i]);
             }
             "--json" => {
                 json = true;

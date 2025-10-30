@@ -9,8 +9,7 @@ fn main() {
         .output()
         .ok()
         .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+        .map_or_else(|| "unknown".to_string(), |s| s.trim().to_string());
 
     // Get git commit date
     let git_date = Command::new("git")
@@ -18,17 +17,16 @@ fn main() {
         .output()
         .ok()
         .and_then(|output| String::from_utf8(output.stdout).ok())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string());
+        .map_or_else(|| "unknown".to_string(), |s| s.trim().to_string());
 
     // Get build target
     let target = std::env::var("TARGET").unwrap_or_else(|_| "unknown".to_string());
 
     // Set environment variables for compile time
-    println!("cargo:rustc-env=GIT_HASH={}", git_hash);
-    println!("cargo:rustc-env=GIT_DATE={}", git_date);
-    println!("cargo:rustc-env=BUILD_TARGET={}", target);
-    
+    println!("cargo:rustc-env=GIT_HASH={git_hash}");
+    println!("cargo:rustc-env=GIT_DATE={git_date}");
+    println!("cargo:rustc-env=BUILD_TARGET={target}");
+
     // Rebuild if git HEAD changes
     println!("cargo:rerun-if-changed=.git/HEAD");
 }

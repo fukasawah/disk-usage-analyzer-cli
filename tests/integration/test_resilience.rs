@@ -20,22 +20,22 @@ mod tests {
         // Try to create an inaccessible directory (this might not work in all environments)
         let inaccessible_dir = root.join("inaccessible");
         fs::create_dir_all(&inaccessible_dir).ok();
-        
+
         let opts = ScanOptions {
             basis: SizeBasis::Logical,
             ..Default::default()
         };
 
         let result = dua::scan_summary(root, &opts);
-        
+
         // Should complete even if there are some errors
         assert!(result.is_ok(), "Scan should complete despite errors");
-        
+
         let summary = result.unwrap();
-        
+
         // Should have scanned the accessible directories
         assert!(!summary.entries.is_empty(), "Should have some entries");
-        
+
         // If there were errors, they should be recorded
         if !summary.errors.is_empty() {
             println!("Errors recorded: {}", summary.errors.len());
@@ -60,10 +60,10 @@ mod tests {
         };
 
         let result = dua::scan_summary(root, &opts);
-        
+
         assert!(result.is_ok());
         let summary = result.unwrap();
-        
+
         // Should handle empty directories gracefully
         for entry in &summary.entries {
             // All sizes should be 0 or very small (directory metadata)
@@ -87,7 +87,7 @@ mod tests {
         };
 
         let result = dua::scan_summary(root, &opts);
-        
+
         assert!(result.is_ok());
         let summary = result.unwrap();
         assert!(!summary.entries.is_empty());

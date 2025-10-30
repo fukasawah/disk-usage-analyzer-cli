@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use dua::io::snapshot::{write_snapshot, read_snapshot};
+    use dua::io::snapshot::{read_snapshot, write_snapshot};
     use dua::models::{DirectoryEntry, SnapshotMeta};
     use tempfile::NamedTempFile;
 
@@ -20,23 +20,21 @@ mod tests {
             excludes: vec![],
         };
 
-        let entries = vec![
-            DirectoryEntry {
-                path: "/test/dir".to_string(),
-                parent_path: Some("/test".to_string()),
-                depth: 1,
-                size_bytes: 5000,
-                file_count: 3,
-                dir_count: 1,
-            },
-        ];
+        let entries = vec![DirectoryEntry {
+            path: "/test/dir".to_string(),
+            parent_path: Some("/test".to_string()),
+            depth: 1,
+            size_bytes: 5000,
+            file_count: 3,
+            dir_count: 1,
+        }];
 
         write_snapshot(snapshot_path, &meta, &entries, &[]).unwrap();
         let (_meta, entries, _errors) = read_snapshot(snapshot_path).unwrap();
 
         // Serialize to JSON
         let json = serde_json::to_string(&entries).unwrap();
-        
+
         // Verify JSON contains expected fields
         assert!(json.contains("path"));
         assert!(json.contains("size_bytes"));

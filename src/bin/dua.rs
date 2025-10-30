@@ -1,19 +1,19 @@
 //! Disk Usage CLI (dua) - Main binary entry point
 
-use dua::services::aggregate::{get_immediate_children, sort_and_limit, SortBy};
-use dua::cli::args::{parse_args, Command};
-use dua::cli::output::{format_text, format_json};
-use dua::{ScanOptions, SizeBasis, HardlinkPolicy};
+use dua::cli::args::{Command, parse_args};
+use dua::cli::output::{format_json, format_text};
+use dua::services::aggregate::{SortBy, get_immediate_children, sort_and_limit};
+use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
 use std::process;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    
+
     if args.len() < 2 {
         print_help();
         return;
     }
-    
+
     match args[1].as_str() {
         "--help" | "-h" => {
             print_help();
@@ -25,7 +25,7 @@ fn main() {
         }
         _ => {}
     }
-    
+
     // Parse arguments
     let cli_args = match parse_args(&args) {
         Ok(a) => a,
@@ -35,28 +35,27 @@ fn main() {
             process::exit(2);
         }
     };
-    
+
     // Execute command
-    let exit_code = match cli_args.command {
+    let exit_code = match &cli_args.command {
         Command::Scan(scan_args) => handle_scan(scan_args),
         Command::Drill(drill_args) => handle_drill(drill_args),
         Command::View(view_args) => handle_view(view_args),
     };
-    
+
     process::exit(exit_code);
 }
 
-fn handle_scan(args: dua::cli::args::ScanArgs) -> i32 {
+fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
     // Snapshot is required for scan
-    let snapshot_path = match args.snapshot {
-        Some(path) => path,
-        None => {
-            eprintln!("Error: --snapshot is required for scan command");
-            eprintln!("Example: dua scan /usr --snapshot usr.parquet");
-            return 2;
-        }
+    let snapshot_path = if let Some(ref path) = args.snapshot {
+        path.clone()
+    } else {
+        eprintln!("Error: --snapshot is required for scan command");
+        eprintln!("Example: dua scan /usr --snapshot usr.parquet");
+        return 2;
     };
-    
+
     // Parse basis
     let basis = match args.basis.as_str() {
         "physical" => SizeBasis::Physical,
@@ -66,7 +65,7 @@ fn handle_scan(args: dua::cli::args::ScanArgs) -> i32 {
             return 2;
         }
     };
-    
+
     // Create scan options
     let opts = ScanOptions {
         basis,
@@ -75,12 +74,12 @@ fn handle_scan(args: dua::cli::args::ScanArgs) -> i32 {
         follow_symlinks: false,
         cross_filesystem: false,
     };
-    
+
     // Perform scan
     if args.verbose || !args.quiet {
         eprintln!("Scanning: {}", args.path);
     }
-    
+
     let summary = match dua::scan_summary(&args.path, &opts) {
         Ok(s) => s,
         Err(e) => {
@@ -92,12 +91,12 @@ fn handle_scan(args: dua::cli::args::ScanArgs) -> i32 {
             };
         }
     };
-    
+
     if args.verbose || !args.quiet {
         eprintln!("Found {} entries", summary.entries.len());
-        eprintln!("Saving snapshot to: {}", snapshot_path);
+        eprintln!("Saving snapshot to: {snapshot_path}");
     }
-    
+
     // Create snapshot metadata
     let meta = dua::models::SnapshotMeta {
         scan_root: summary.root.clone(),
@@ -107,31 +106,32 @@ fn handle_scan(args: dua::cli::args::ScanArgs) -> i32 {
         hardlink_policy: "dedupe".to_string(),
         excludes: vec![],
     };
-    
+
     // Save snapshot
-    if let Err(e) = dua::io::snapshot::write_snapshot(
-        &snapshot_path,
-        &meta,
-        &summary.entries,
-        &summary.errors,
-    ) {
+    if let Err(e) =
+        dua::io::snapshot::write_snapshot(&snapshot_path, &meta, &summary.entries, &summary.errors)
+    {
         eprintln!("Error: Failed to save snapshot: {e}");
         return 4;
     }
-    
+
     if args.verbose || !args.quiet {
-        eprintln!("Snapshot saved: {} ({} entries)", snapshot_path, summary.entries.len());
+        eprintln!(
+            "Snapshot saved: {} ({} entries)",
+            snapshot_path,
+            summary.entries.len()
+        );
     }
-    
+
     // Return appropriate exit code
-    if !summary.errors.is_empty() {
-        3 // Partial failure
-    } else {
+    if summary.errors.is_empty() {
         0 // Success
+    } else {
+        3 // Partial failure
     }
 }
 
-fn handle_drill(args: dua::cli::args::DrillArgs) -> i32 {
+fn handle_drill(args: &dua::cli::args::DrillArgs) -> i32 {
     // Parse basis
     let basis = match args.basis.as_str() {
         "physical" => SizeBasis::Physical,
@@ -141,22 +141,25 @@ fn handle_drill(args: dua::cli::args::DrillArgs) -> i32 {
             return 2;
         }
     };
-    
+
     // Parse sort
     let sort_by = match args.sort.as_str() {
         "size" => SortBy::Size,
         "files" => SortBy::Files,
         "dirs" => SortBy::Dirs,
         _ => {
-            eprintln!("Invalid sort: {}. Use 'size', 'files', or 'dirs'", args.sort);
+            eprintln!(
+                "Invalid sort: {}. Use 'size', 'files', or 'dirs'",
+                args.sort
+            );
             return 2;
         }
     };
-    
+
     // Verify that subdir is within root (or use subdir directly)
     // For drill, we simply use the subdir as the new root
     let scan_path = &args.subdir;
-    
+
     // Create scan options
     let opts = ScanOptions {
         basis,
@@ -165,7 +168,7 @@ fn handle_drill(args: dua::cli::args::DrillArgs) -> i32 {
         follow_symlinks: false,
         cross_filesystem: false,
     };
-    
+
     // Perform scan on the subdirectory
     let summary = match dua::scan_summary(scan_path, &opts) {
         Ok(s) => s,
@@ -178,13 +181,13 @@ fn handle_drill(args: dua::cli::args::DrillArgs) -> i32 {
             };
         }
     };
-    
+
     // Get immediate children
     let mut children = get_immediate_children(&summary.entries, scan_path, 0);
-    
+
     // Sort and limit
     children = sort_and_limit(children, sort_by, Some(args.top));
-    
+
     // Output
     if args.json {
         let json = format_json(&summary, &children);
@@ -192,16 +195,16 @@ fn handle_drill(args: dua::cli::args::DrillArgs) -> i32 {
     } else {
         format_text(&summary, &children);
     }
-    
+
     // Return appropriate exit code
-    if !summary.errors.is_empty() {
-        3 // Partial failure
-    } else {
+    if summary.errors.is_empty() {
         0 // Success
+    } else {
+        3 // Partial failure
     }
 }
 
-fn handle_view(args: dua::cli::args::ViewArgs) -> i32 {
+fn handle_view(args: &dua::cli::args::ViewArgs) -> i32 {
     // Parse sort
     let sort_by = match args.sort.as_str() {
         "size" => SortBy::Size,
@@ -212,7 +215,7 @@ fn handle_view(args: dua::cli::args::ViewArgs) -> i32 {
             return 2;
         }
     };
-    
+
     // Read snapshot
     let (meta, all_entries, errors) = match dua::io::snapshot::read_snapshot(&args.from_snapshot) {
         Ok(data) => data,
@@ -221,46 +224,50 @@ fn handle_view(args: dua::cli::args::ViewArgs) -> i32 {
             return 4;
         }
     };
-    
+
     // Determine root path and depth for filtering
     let (display_root, parent_depth) = if let Some(ref drill_path) = args.path {
         // Find the entry for this path to get its depth
         let entry = all_entries.iter().find(|e| e.path == *drill_path);
-        match entry {
-            Some(e) => (drill_path.clone(), e.depth),
-            None => {
-                eprintln!("Error: Path '{}' not found in snapshot", drill_path);
-                return 2;
-            }
+        if let Some(e) = entry {
+            (drill_path.clone(), e.depth)
+        } else {
+            eprintln!("Error: Path '{drill_path}' not found in snapshot");
+            return 2;
         }
     } else {
         (meta.scan_root.clone(), 0)
     };
-    
+
     // Get immediate children of the target path
     let mut entries = get_immediate_children(&all_entries, &display_root, parent_depth);
-    
+
     // Sort and limit
     entries = sort_and_limit(entries, sort_by, Some(args.top));
-    
+
     // Create a summary-like structure for output
     let summary = dua::Summary {
         root: display_root,
-        entries: vec![],  // Not used for view
+        entries: vec![], // Not used for view
         errors,
-        started_at: std::time::SystemTime::UNIX_EPOCH,  // Placeholder
-        finished_at: std::time::SystemTime::UNIX_EPOCH,  // Placeholder
+        started_at: std::time::SystemTime::UNIX_EPOCH, // Placeholder
+        finished_at: std::time::SystemTime::UNIX_EPOCH, // Placeholder
     };
-    
+
     // Output
     if args.json {
         let json = format_json(&summary, &entries);
         println!("{json}");
     } else {
-        use dua::cli::output::{format_text_with_all_entries, AdaptivePreviewStrategy};
-        format_text_with_all_entries(&summary, &entries, &all_entries, &AdaptivePreviewStrategy::default());
+        use dua::cli::output::{AdaptivePreviewStrategy, format_text_with_all_entries};
+        format_text_with_all_entries(
+            &summary,
+            &entries,
+            &all_entries,
+            &AdaptivePreviewStrategy::default(),
+        );
     }
-    
+
     0
 }
 
@@ -307,11 +314,11 @@ fn print_version() {
     const GIT_HASH: &str = env!("GIT_HASH");
     const GIT_DATE: &str = env!("GIT_DATE");
     const BUILD_TARGET: &str = env!("BUILD_TARGET");
-    
+
     println!("dua {VERSION}");
     println!("Commit: {GIT_HASH} ({GIT_DATE})");
     println!("Target: {BUILD_TARGET}");
-    
+
     #[cfg(debug_assertions)]
     println!("Build: debug");
     #[cfg(not(debug_assertions))]

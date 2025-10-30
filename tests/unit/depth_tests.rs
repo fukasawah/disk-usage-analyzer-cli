@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use dua::{ScanOptions, SizeBasis, HardlinkPolicy};
+    use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
 
@@ -30,10 +30,14 @@ mod tests {
         assert!(result.is_ok());
 
         let summary = result.unwrap();
-        
+
         // Should only contain entries up to depth 1
         for entry in &summary.entries {
-            assert!(entry.depth <= 1, "Entry depth {} exceeds limit", entry.depth);
+            assert!(
+                entry.depth <= 1,
+                "Entry depth {} exceeds limit",
+                entry.depth
+            );
         }
     }
 
@@ -60,7 +64,7 @@ mod tests {
 
         let summary = result.unwrap();
         assert!(!summary.entries.is_empty());
-        
+
         // Should have entries at various depths
         let max_depth = summary.entries.iter().map(|e| e.depth).max().unwrap_or(0);
         assert!(max_depth > 1, "Expected deeper traversal");

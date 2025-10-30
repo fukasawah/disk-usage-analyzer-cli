@@ -5,19 +5,19 @@
 #[allow(clippy::cast_precision_loss)]
 pub fn format_size(bytes: u64) -> String {
     const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB"];
-    
+
     if bytes == 0 {
         return "0 B".to_string();
     }
-    
+
     let mut size = bytes as f64;
     let mut unit_idx = 0;
-    
+
     while size >= 1024.0 && unit_idx < UNITS.len() - 1 {
         size /= 1024.0;
         unit_idx += 1;
     }
-    
+
     if unit_idx == 0 {
         format!("{} {}", bytes, UNITS[0])
     } else {
@@ -35,7 +35,7 @@ mod tests {
         assert_eq!(format_size(512), "512 B");
         assert_eq!(format_size(1024), "1.00 KB");
         assert_eq!(format_size(1536), "1.50 KB");
-        assert_eq!(format_size(1048576), "1.00 MB");
-        assert_eq!(format_size(1073741824), "1.00 GB");
+        assert_eq!(format_size(1_048_576), "1.00 MB");
+        assert_eq!(format_size(1_073_741_824), "1.00 GB");
     }
 }

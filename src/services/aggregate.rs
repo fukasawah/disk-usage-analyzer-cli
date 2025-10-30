@@ -34,23 +34,23 @@ pub fn sort_and_limit(
     if let Some(k) = top_k {
         entries.truncate(k);
     }
-    
+
     entries
 }
 
-/// Get immediate children of a directory (depth = parent_depth + 1)
+/// Get immediate children of a directory (depth = `parent_depth` + 1)
+#[must_use]
 pub fn get_immediate_children(
     all_entries: &[DirectoryEntry],
     parent_path: &str,
     parent_depth: u16,
 ) -> Vec<DirectoryEntry> {
     let target_depth = parent_depth + 1;
-    
+
     all_entries
         .iter()
         .filter(|e| {
-            e.depth == target_depth
-                && e.parent_path.as_ref().map_or(false, |p| p == parent_path)
+            e.depth == target_depth && e.parent_path.as_ref().is_some_and(|p| p == parent_path)
         })
         .cloned()
         .collect()
