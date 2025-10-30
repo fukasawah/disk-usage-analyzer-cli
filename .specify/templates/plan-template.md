@@ -31,7 +31,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Required gates based on repository constitution:
+
+- Code Quality: Plan identifies modules, public APIs, and documents invariants; no unsafe `unwrap`
+  in critical paths in the proposed approach.
+- Testing: Plan lists unit + integration tests per user story; target coverage ≥ 90% lines on
+  changed code; notes for deterministic, fast tests.
+- UX Consistency: Plan states CLI flags, exit codes, and JSON schema; breaking changes flagged.
+- Performance: Plan states expected SLOs and any benchmarks/profiling needed for changes that touch
+  traversal/aggregation logic.
 
 ## Project Structure
 

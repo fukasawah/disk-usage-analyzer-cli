@@ -95,6 +95,17 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+### Non-Functional Requirements *(mandatory)*
+
+- **NFR-Perf**: Define performance SLOs for this feature (e.g., p95 runtime, memory ceiling). Include
+  any required benchmarks or profiling to validate changes that affect traversal/aggregation logic.
+- **NFR-UX/CLI**: Specify CLI flags, exit codes, and `--json` schema changes (if any). Note any
+  deprecations and compatibility plans.
+- **NFR-CodeQuality**: Note any constraints impacting code structure (module boundaries, public API
+  contracts, error handling without `unwrap` in production paths) and observability expectations.
+- **NFR-Testing**: List required unit and integration/CLI tests, determinism requirements, and
+  planned coverage level for changed code (target ≥ 90% lines unless justified).
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
