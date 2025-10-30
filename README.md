@@ -1,137 +1,102 @@
-# Disk Usage Analyzer (dua)
+# dua - Disk Usage Analyzer
 
 [![CI](https://github.com/fukasawah/dua/actions/workflows/ci.yml/badge.svg)](https://github.com/fukasawah/dua/actions/workflows/ci.yml)
 [![Release](https://github.com/fukasawah/dua/actions/workflows/release.yml/badge.svg)](https://github.com/fukasawah/dua/actions/workflows/release.yml)
 
-A fast, memory-efficient command-line tool to analyze disk usage for directory trees, written in Rust.
+Fast command-line tool to analyze disk usage and find space hogs. Written in Rust.
 
 ## Features
 
-- **Fast traversal**: Efficiently scan large directory structures
-- **Multiple views**: Summarize immediate children, drill down into subdirectories
-- **Flexible sizing**: Choose between physical (actual disk usage) or logical (file size) basis
-- **Snapshot support**: Save scan results to Parquet format for later analysis without re-scanning
-- **JSON output**: Machine-readable format for integration with other tools
-- **Error resilient**: Continues scanning even when encountering permission errors
-- **Safe traversal**: Doesn't follow symlinks or cross filesystem boundaries by default
+- **Fast**: Efficiently scan large directory trees
+- **Snapshot support**: Save scan results to Parquet format for instant re-analysis
+- **Drill down**: View subdirectories without re-scanning
+- **JSON output**: Machine-readable format for scripting
+- **Safe**: Doesn't follow symlinks or cross filesystem boundaries
 
 ## Installation
 
-### Pre-built Binaries
+Download pre-built binaries from [Releases](https://github.com/fukasawah/dua/releases):
 
-Download the latest release for your platform from [Releases](https://github.com/fukasawah/dua/releases):
-
-**✅ Fully Supported (Tested in CI)**:
+**Supported Platforms** (tested in CI):
 - Linux x86_64 (glibc): `dua-v*-linux-x86_64`
 - Linux x86_64 (musl, static): `dua-v*-linux-x86_64-musl` **← Recommended**
 - Windows x86_64: `dua-v*-windows-x86_64.exe`
 
-**⚠️ Best Effort (Untested, should work)**:
-- Linux ARM64: `dua-v*-linux-aarch64`
-- macOS Intel: `dua-v*-macos-x86_64`
-- macOS Apple Silicon: `dua-v*-macos-aarch64`
+**Unsupported** (builds provided but untested):
+- Linux ARM64, macOS (Intel/Apple Silicon)
 
-> **Note**: macOS and ARM builds are not actively tested by the maintainer. They should work, but if you encounter issues, please report them!
+> **Note**: The maintainer does not have access to macOS. macOS builds are provided as-is without testing.
 
-## Quick Start
+## Usage
 
-### Build
+Scan and save a snapshot:
+```bash
+dua scan /path/to/directory --snapshot usage.parquet
+```
+
+View results (instant, no re-scan):
+```bash
+dua view usage.parquet
+```
+
+Drill down into a subdirectory:
+```bash
+dua view usage.parquet --path /path/to/directory/subdir
+```
+
+JSON output for scripting:
+```bash
+dua view usage.parquet --json
+```
+
+## Building from Source
+
+Requirements: Rust 1.77+
 
 ```bash
 cargo build --release
+# Binary: target/release/dua
 ```
 
-**Static Linux binary** (no libc dependency, works on any Linux):
+Static Linux binary (recommended, works on any Linux):
 ```bash
 rustup target add x86_64-unknown-linux-musl
 cargo build --release --target x86_64-unknown-linux-musl
-# → 5.2 MB, statically linked
-```
-
-**Cross-platform builds** (requires respective platform or CI):
-```bash
-# Windows (on Windows or CI)
-rustup target add x86_64-pc-windows-msvc
-cargo build --release --target x86_64-pc-windows-msvc
-
-# macOS (on macOS or CI)
-rustup target add x86_64-apple-darwin
-cargo build --release --target x86_64-apple-darwin
-```
-
-### Basic Usage
-
-Scan a directory:
-```bash
-./target/release/dua scan /path/to/directory
-```
-
-Get JSON output:
-```bash
-./target/release/dua scan /path/to/directory --json
-```
-
-Save and view snapshots:
-```bash
-./target/release/dua scan /large/dir --snapshot scan.parquet
-./target/release/dua view --from-snapshot scan.parquet
-```
-
-## Documentation
-
-- [Quickstart Guide](specs/001-disk-usage-cli/quickstart.md) - Detailed usage examples
-- [Feature Specification](specs/001-disk-usage-cli/spec.md) - Complete feature requirements
-- [Implementation Plan](specs/001-disk-usage-cli/plan.md) - Technical design and architecture
-
-## Project Structure
-
-```
-dua/
-├── src/
-│   ├── lib.rs              # Public API and core types
-│   ├── models/             # Data structures
-│   ├── services/           # Core business logic
-│   │   ├── traverse.rs     # Directory traversal
-│   │   ├── aggregate.rs    # Size aggregation
-│   │   ├── size.rs         # Size computation
-│   │   └── format.rs       # Human-readable formatting
-│   ├── io/                 # I/O operations
-│   │   └── snapshot.rs     # Parquet snapshot handling
-│   ├── cli/                # Command-line interface
-│   └── bin/
-│       └── dua.rs          # Main binary entry point
-├── tests/
-│   ├── unit/               # Unit tests
-│   ├── integration/        # Integration tests
-│   └── contract/           # API contract tests
-└── specs/
-    └── 001-disk-usage-cli/ # Feature specifications
 ```
 
 ## Development
 
-### Prerequisites
-
-- Rust 1.77 or later
-- Cargo
-
-### Running Tests
-
+Run tests:
 ```bash
 cargo test
 ```
 
-### Code Quality
-
+Check code quality:
 ```bash
 cargo clippy
-cargo fmt
+cargo fmt -- --check
 ```
+
+Measure test coverage:
+```bash
+cargo install cargo-llvm-cov
+cargo llvm-cov --html --open
+```
+
+## Releasing
+
+1. Update version in `Cargo.toml`
+2. Commit: `git commit -am "chore: bump version to X.Y.Z"`
+3. Tag: `git tag vX.Y.Z`
+4. Push: `git push origin main --tags`
+
+GitHub Actions will automatically build and publish release binaries.
 
 ## License
 
-See LICENSE file for details.
+Licensed under either of:
 
-## Contributing
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
-Contributions are welcome! Please read the specification documents in `specs/001-disk-usage-cli/` to understand the feature requirements and design decisions.
+at your option.
