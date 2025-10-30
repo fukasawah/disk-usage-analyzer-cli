@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::{ScanOptions, SizeBasis, HardlinkPolicy};
+    use dua::{ScanOptions, SizeBasis, HardlinkPolicy};
     use std::fs;
     use tempfile::TempDir;
 
@@ -26,7 +26,7 @@ mod tests {
             cross_filesystem: false,
         };
 
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         assert!(result.is_ok());
 
         let summary = result.unwrap();
@@ -55,7 +55,7 @@ mod tests {
             cross_filesystem: false,
         };
 
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         assert!(result.is_ok());
 
         let summary = result.unwrap();

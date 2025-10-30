@@ -1,6 +1,6 @@
 //! Contract test for JSON output shape
 
-use rs_disk_usage::{ScanOptions, SizeBasis};
+use dua::{ScanOptions, SizeBasis};
 use std::fs;
 use tempfile::TempDir;
 
@@ -18,7 +18,7 @@ fn test_json_output_fields() {
         ..Default::default()
     };
 
-    let summary = rs_disk_usage::scan_summary(root, &opts).unwrap();
+    let summary = dua::scan_summary(root, &opts).unwrap();
 
     // Verify summary structure
     assert!(!summary.root.is_empty());

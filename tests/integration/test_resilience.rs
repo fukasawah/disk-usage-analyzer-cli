@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::{ScanOptions, SizeBasis};
+    use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
 
@@ -26,7 +26,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         
         // Should complete even if there are some errors
         assert!(result.is_ok(), "Scan should complete despite errors");
@@ -59,7 +59,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         
         assert!(result.is_ok());
         let summary = result.unwrap();
@@ -86,7 +86,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         
         assert!(result.is_ok());
         let summary = result.unwrap();

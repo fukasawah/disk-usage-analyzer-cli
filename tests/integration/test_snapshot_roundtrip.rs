@@ -2,8 +2,8 @@
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::io::snapshot::{write_snapshot, read_snapshot};
-    use rs_disk_usage::models::{DirectoryEntry, SnapshotMeta, ErrorItem};
+    use dua::io::snapshot::{write_snapshot, read_snapshot};
+    use dua::models::{DirectoryEntry, SnapshotMeta, ErrorItem};
     use tempfile::NamedTempFile;
 
     #[test]

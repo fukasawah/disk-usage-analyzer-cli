@@ -2,7 +2,7 @@
 mod integration {
     mod test_scan;
     mod test_errors;
-    mod test_drill;
+    mod test_view_drill_down;
     mod test_snapshot_roundtrip;
     mod test_snapshot_errors;
     mod test_perf_smoke;

@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::io::snapshot::read_snapshot;
+    use dua::io::snapshot::read_snapshot;
     use tempfile::NamedTempFile;
     use std::io::Write;
 

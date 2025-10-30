@@ -2,8 +2,8 @@
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::models::DirectoryEntry;
-    use rs_disk_usage::services::aggregate::{sort_and_limit, SortBy};
+    use dua::models::DirectoryEntry;
+    use dua::services::aggregate::{sort_and_limit, SortBy};
 
     #[test]
     fn test_sort_by_size() {

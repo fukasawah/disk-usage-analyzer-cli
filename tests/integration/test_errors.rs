@@ -1,11 +1,11 @@
 //! Integration test for error handling
 
-use rs_disk_usage::ScanOptions;
+use dua::ScanOptions;
 
 #[test]
 fn test_invalid_path_error() {
     let opts = ScanOptions::default();
-    let result = rs_disk_usage::scan_summary("/definitely/does/not/exist/xyz123", &opts);
+    let result = dua::scan_summary("/definitely/does/not/exist/xyz123", &opts);
     
     assert!(result.is_err());
     
@@ -21,7 +21,7 @@ fn test_file_instead_of_directory() {
     
     let temp_file = NamedTempFile::new().unwrap();
     let opts = ScanOptions::default();
-    let result = rs_disk_usage::scan_summary(temp_file.path(), &opts);
+    let result = dua::scan_summary(temp_file.path(), &opts);
     
     assert!(result.is_err());
     

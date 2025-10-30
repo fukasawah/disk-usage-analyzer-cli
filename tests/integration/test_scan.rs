@@ -1,6 +1,6 @@
 //! Integration test for scan command
 
-use rs_disk_usage::{ScanOptions, SizeBasis};
+use dua::{ScanOptions, SizeBasis};
 use std::fs;
 use std::process::Command;
 use tempfile::TempDir;
@@ -8,7 +8,7 @@ use tempfile::TempDir;
 #[test]
 fn test_scan_command_help() {
     let output = Command::new("cargo")
-        .args(["run", "--bin", "dux", "--", "--help"])
+        .args(["run", "--bin", "dua", "--", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -34,7 +34,7 @@ fn test_scan_via_api() {
         ..Default::default()
     };
 
-    let result = rs_disk_usage::scan_summary(root, &opts);
+    let result = dua::scan_summary(root, &opts);
     assert!(result.is_ok());
 
     let summary = result.unwrap();

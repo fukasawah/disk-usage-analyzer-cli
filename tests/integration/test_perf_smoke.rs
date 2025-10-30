@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::{ScanOptions, SizeBasis};
+    use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use std::time::Instant;
     use tempfile::TempDir;
@@ -30,7 +30,7 @@ mod tests {
         };
 
         let start = Instant::now();
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         let duration = start.elapsed();
 
         assert!(result.is_ok(), "Scan failed: {:?}", result.err());
@@ -69,7 +69,7 @@ mod tests {
         };
 
         let start = Instant::now();
-        let result = rs_disk_usage::scan_summary(root, &opts);
+        let result = dua::scan_summary(root, &opts);
         let duration = start.elapsed();
 
         assert!(result.is_ok());

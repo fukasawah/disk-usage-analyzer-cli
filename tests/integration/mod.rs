@@ -7,7 +7,7 @@ mod test_scan;
 mod test_errors;
 
 #[cfg(test)]
-mod test_drill;
+mod test_view_drill_down;
 
 #[cfg(test)]
 mod test_snapshot_roundtrip;

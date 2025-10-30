@@ -1,13 +1,13 @@
-//! Integration test for drill command
+//! Integration test for view drill-down functionality (scanning subdirectories)
 
 #[cfg(test)]
 mod tests {
-    use rs_disk_usage::{ScanOptions, SizeBasis};
+    use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
 
     #[test]
-    fn test_drill_equivalence() {
+    fn test_view_drill_down_equivalence() {
         let temp_dir = TempDir::new().unwrap();
         let root = temp_dir.path();
 
@@ -23,11 +23,11 @@ mod tests {
         };
 
         // Scan the root
-        let root_summary = rs_disk_usage::scan_summary(root, &opts).unwrap();
+        let root_summary = dua::scan_summary(root, &opts).unwrap();
         
         // Scan the subdirectory directly
         let subdir_path = root.join("subdir");
-        let subdir_summary = rs_disk_usage::scan_summary(&subdir_path, &opts).unwrap();
+        let subdir_summary = dua::scan_summary(&subdir_path, &opts).unwrap();
 
         // Both should succeed
         assert!(!root_summary.entries.is_empty());
@@ -38,7 +38,7 @@ mod tests {
     }
 
     #[test]
-    fn test_drill_with_depth() {
+    fn test_view_drill_down_with_depth() {
         let temp_dir = TempDir::new().unwrap();
         let root = temp_dir.path();
 
@@ -55,7 +55,7 @@ mod tests {
         };
 
         let subdir = root.join("a");
-        let result = rs_disk_usage::scan_summary(&subdir, &opts);
+        let result = dua::scan_summary(&subdir, &opts);
         
         assert!(result.is_ok());
         let summary = result.unwrap();

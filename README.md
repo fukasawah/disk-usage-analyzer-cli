@@ -1,4 +1,7 @@
-# Disk Usage CLI (dux)
+# Disk Usage Analyzer (dua)
+
+[![CI](https://github.com/fukasawah/dua/actions/workflows/ci.yml/badge.svg)](https://github.com/fukasawah/dua/actions/workflows/ci.yml)
+[![Release](https://github.com/fukasawah/dua/actions/workflows/release.yml/badge.svg)](https://github.com/fukasawah/dua/actions/workflows/release.yml)
 
 A fast, memory-efficient command-line tool to analyze disk usage for directory trees, written in Rust.
 
@@ -12,6 +15,24 @@ A fast, memory-efficient command-line tool to analyze disk usage for directory t
 - **Error resilient**: Continues scanning even when encountering permission errors
 - **Safe traversal**: Doesn't follow symlinks or cross filesystem boundaries by default
 
+## Installation
+
+### Pre-built Binaries
+
+Download the latest release for your platform from [Releases](https://github.com/fukasawah/dua/releases):
+
+**✅ Fully Supported (Tested in CI)**:
+- Linux x86_64 (glibc): `dua-v*-linux-x86_64`
+- Linux x86_64 (musl, static): `dua-v*-linux-x86_64-musl` **← Recommended**
+- Windows x86_64: `dua-v*-windows-x86_64.exe`
+
+**⚠️ Best Effort (Untested, should work)**:
+- Linux ARM64: `dua-v*-linux-aarch64`
+- macOS Intel: `dua-v*-macos-x86_64`
+- macOS Apple Silicon: `dua-v*-macos-aarch64`
+
+> **Note**: macOS and ARM builds are not actively tested by the maintainer. They should work, but if you encounter issues, please report them!
+
 ## Quick Start
 
 ### Build
@@ -20,22 +41,40 @@ A fast, memory-efficient command-line tool to analyze disk usage for directory t
 cargo build --release
 ```
 
+**Static Linux binary** (no libc dependency, works on any Linux):
+```bash
+rustup target add x86_64-unknown-linux-musl
+cargo build --release --target x86_64-unknown-linux-musl
+# → 5.2 MB, statically linked
+```
+
+**Cross-platform builds** (requires respective platform or CI):
+```bash
+# Windows (on Windows or CI)
+rustup target add x86_64-pc-windows-msvc
+cargo build --release --target x86_64-pc-windows-msvc
+
+# macOS (on macOS or CI)
+rustup target add x86_64-apple-darwin
+cargo build --release --target x86_64-apple-darwin
+```
+
 ### Basic Usage
 
 Scan a directory:
 ```bash
-./target/release/dux scan /path/to/directory
+./target/release/dua scan /path/to/directory
 ```
 
 Get JSON output:
 ```bash
-./target/release/dux scan /path/to/directory --json
+./target/release/dua scan /path/to/directory --json
 ```
 
 Save and view snapshots:
 ```bash
-./target/release/dux scan /large/dir --snapshot scan.parquet
-./target/release/dux view --from-snapshot scan.parquet
+./target/release/dua scan /large/dir --snapshot scan.parquet
+./target/release/dua view --from-snapshot scan.parquet
 ```
 
 ## Documentation
@@ -47,7 +86,7 @@ Save and view snapshots:
 ## Project Structure
 
 ```
-rs-disk-usage/
+dua/
 ├── src/
 │   ├── lib.rs              # Public API and core types
 │   ├── models/             # Data structures
@@ -60,7 +99,7 @@ rs-disk-usage/
 │   │   └── snapshot.rs     # Parquet snapshot handling
 │   ├── cli/                # Command-line interface
 │   └── bin/
-│       └── dux.rs          # Main binary entry point
+│       └── dua.rs          # Main binary entry point
 ├── tests/
 │   ├── unit/               # Unit tests
 │   ├── integration/        # Integration tests
