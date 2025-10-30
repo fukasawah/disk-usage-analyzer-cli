@@ -1,0 +1,8 @@
+# Benchmark Results - Thu 30 Oct 2025 05:36:25 PM UTC
+Binary: ./target/release/dux
+Files: 10000
+Dirs: 201
+Scan: 84ms
+View: 11ms
+Drill: 13ms
+

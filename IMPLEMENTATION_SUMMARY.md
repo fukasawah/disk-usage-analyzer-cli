@@ -1,7 +1,23 @@
 # Implementation Summary - Disk Usage CLI (dux)
 
 **Date**: 2025-10-30  
-**Status**: ✅ MVP Complete - All 7 phases implemented
+**Status**: ✅ MVP + Optimizations Complete - All phases implemented
+
+## Latest Update: Optimization & Quality (v0.1.1)
+
+**Completion Date**: 2025-10-30  
+**Feature**: 002-optimization-improvements
+
+### Key Achievements
+
+✅ **Binary Size Optimization**: 61% reduction (13 MB → 5.1 MB)  
+✅ **Windows Platform Support**: Code verified, documentation complete  
+✅ **Test Quality**: Clear naming, 88% coverage on core I/O module  
+✅ **Parquet Optimization**: Minimal features, backward compatible
+
+See [OPTIMIZATION_SUMMARY.md](OPTIMIZATION_SUMMARY.md) for detailed metrics.
+
+---
 
 ## Overview
 

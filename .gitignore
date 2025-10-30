@@ -6,6 +6,12 @@ release/
 *.rlib
 *.prof*
 
+# Coverage reports
+target/llvm-cov/
+coverage.lcov
+*.profraw
+*.profdata
+
 # IDE files
 .idea/
 .vscode/
