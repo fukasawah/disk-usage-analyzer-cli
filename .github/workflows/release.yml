@@ -13,7 +13,6 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Get version from tag
@@ -22,39 +21,37 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          body: |
-            ## What's Changed
-            
-            See [RELEASE_NOTES.md](https://github.com/${{ github.repository }}/blob/${{ github.ref }}/RELEASE_NOTES.md) for details.
-            
-            ## Platform Support
-            
-            ### ✅ Fully Supported (Tested)
-            - **Linux x86_64** (glibc and musl)
-            - **Windows x86_64** (MSVC)
-            
-            ### ⚠️ Best Effort (Untested, should work)
-            - **Linux ARM64** (aarch64)
-            - **macOS** (Intel and Apple Silicon)
-            
-            ## Downloads
-            
-            Choose the appropriate binary for your platform:
-            
-            - `dua-v*-linux-x86_64`: Linux (glibc, requires libc)
-            - `dua-v*-linux-x86_64-musl`: Linux (static, no dependencies) **← Recommended for Linux**
-            - `dua-v*-linux-aarch64`: Linux ARM64 (Raspberry Pi, ARM servers)
-            - `dua-v*-windows-x86_64.exe`: Windows 64-bit
-            - `dua-v*-macos-x86_64`: macOS Intel
-            - `dua-v*-macos-aarch64`: macOS Apple Silicon (M1/M2/M3)
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --title "Release ${{ steps.get_version.outputs.version }}" \
+            --notes "## What's Changed
+
+          Fast command-line tool to analyze disk usage and find space hogs.
+
+          ## Platform Support
+
+          ### ✅ Fully Supported (Tested)
+          - **Linux x86_64** (glibc and musl)
+          - **Windows x86_64** (MSVC)
+
+          ### ⚠️ Best Effort (Untested, should work)
+          - **Linux ARM64** (aarch64)
+          - **macOS** (Intel and Apple Silicon)
+
+          **Note**: The maintainer does not have access to macOS or ARM64 hardware. macOS builds are provided as-is without testing.
+
+          ## Downloads
+
+          Choose the appropriate binary for your platform:
+
+          - \`dua-v*-linux-x86_64\`: Linux (glibc, requires libc)
+          - \`dua-v*-linux-x86_64-musl\`: Linux (static, no dependencies) **← Recommended for Linux**
+          - \`dua-v*-linux-aarch64\`: Linux ARM64 (Raspberry Pi, ARM servers)
+          - \`dua-v*-windows-x86_64.exe\`: Windows 64-bit
+          - \`dua-v*-macos-x86_64\`: macOS Intel
+          - \`dua-v*-macos-aarch64\`: macOS Apple Silicon (M1/M2/M3)"
 
   build:
     name: Build - ${{ matrix.name }}
@@ -147,12 +144,15 @@ jobs:
           BINARY_PATH="target/${{ matrix.target }}/release/${{ matrix.artifact_name }}"
           cp "$BINARY_PATH" "${{ matrix.asset_name }}"
           
-          # Create tarball for Unix-like systems
+          # Create archive
           if [ "${{ runner.os }}" != "Windows" ]; then
+            # tarball for Unix-like systems
             tar czf "${{ matrix.asset_name }}.tar.gz" "${{ matrix.asset_name }}"
             echo "ASSET_PATH=${{ matrix.asset_name }}.tar.gz" >> $GITHUB_ENV
           else
-            echo "ASSET_PATH=${{ matrix.asset_name }}" >> $GITHUB_ENV
+            # zip for Windows
+            7z a "${{ matrix.asset_name }}.zip" "${{ matrix.asset_name }}"
+            echo "ASSET_PATH=${{ matrix.asset_name }}.zip" >> $GITHUB_ENV
           fi
           
           # Get binary size
@@ -161,15 +161,10 @@ jobs:
         shell: bash
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET_PATH }}
-          asset_name: ${{ env.ASSET_PATH }}
-          asset_content_type: application/octet-stream
-
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} ${{ env.ASSET_PATH }}
   checksums:
     name: Generate Checksums
     needs: [create-release, build]
@@ -184,11 +179,7 @@ jobs:
           cat SHA256SUMS.txt
 
       - name: Upload checksums
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: SHA256SUMS.txt
-          asset_name: SHA256SUMS.txt
-          asset_content_type: text/plain
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.ref_name }} SHA256SUMS.txt
