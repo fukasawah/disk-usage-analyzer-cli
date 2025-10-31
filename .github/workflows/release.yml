@@ -15,6 +15,8 @@ jobs:
     outputs:
       version: ${{ steps.get_version.outputs.version }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Get version from tag
         id: get_version
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
@@ -25,33 +27,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create ${{ github.ref_name }} \
+            --draft \
             --title "Release ${{ steps.get_version.outputs.version }}" \
-            --notes "## What's Changed
-
-          Fast command-line tool to analyze disk usage and find space hogs.
-
-          ## Platform Support
-
-          ### ✅ Fully Supported (Tested)
-          - **Linux x86_64** (glibc and musl)
-          - **Windows x86_64** (MSVC)
-
-          ### ⚠️ Best Effort (Untested, should work)
-          - **Linux ARM64** (aarch64)
-          - **macOS** (Intel and Apple Silicon)
-
-          **Note**: The maintainer does not have access to macOS or ARM64 hardware. macOS builds are provided as-is without testing.
-
-          ## Downloads
-
-          Choose the appropriate binary for your platform:
-
-          - \`dua-v*-linux-x86_64\`: Linux (glibc, requires libc)
-          - \`dua-v*-linux-x86_64-musl\`: Linux (static, no dependencies) **← Recommended for Linux**
-          - \`dua-v*-linux-aarch64\`: Linux ARM64 (Raspberry Pi, ARM servers)
-          - \`dua-v*-windows-x86_64.exe\`: Windows 64-bit
-          - \`dua-v*-macos-x86_64\`: macOS Intel
-          - \`dua-v*-macos-aarch64\`: macOS Apple Silicon (M1/M2/M3)"
+            --generate-notes
 
   build:
     name: Build - ${{ matrix.name }}
@@ -148,11 +126,15 @@ jobs:
           if [ "${{ runner.os }}" != "Windows" ]; then
             # tarball for Unix-like systems
             tar czf "${{ matrix.asset_name }}.tar.gz" "${{ matrix.asset_name }}"
-            echo "ASSET_PATH=${{ matrix.asset_name }}.tar.gz" >> $GITHUB_ENV
+            shasum -a 256 "${{ matrix.asset_name }}.tar.gz" > "${{ matrix.asset_name }}.tar.gz.sha256"
+            echo "ASSET=${{ matrix.asset_name }}.tar.gz" >> $GITHUB_ENV
+            echo "ASSET_SUM=${{ matrix.asset_name }}.tar.gz.sha256" >> $GITHUB_ENV
           else
             # zip for Windows
             7z a "${{ matrix.asset_name }}.zip" "${{ matrix.asset_name }}"
-            echo "ASSET_PATH=${{ matrix.asset_name }}.zip" >> $GITHUB_ENV
+            certutil -hashfile "${{ matrix.asset_name }}.zip" SHA256 > "${{ matrix.asset_name }}.zip.sha256"
+            echo "ASSET=${{ matrix.asset_name }}.zip" >> $GITHUB_ENV
+            echo "ASSET_SUM=${{ matrix.asset_name }}.zip.sha256" >> $GITHUB_ENV
           fi
           
           # Get binary size
@@ -164,22 +146,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.ref_name }} ${{ env.ASSET_PATH }}
-  checksums:
-    name: Generate Checksums
-    needs: [create-release, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v3
-
-      - name: Generate SHA256SUMS
-        run: |
-          sha256sum dua-* > SHA256SUMS.txt
-          cat SHA256SUMS.txt
-
-      - name: Upload checksums
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ github.ref_name }} SHA256SUMS.txt
+          gh release upload ${{ github.ref_name }} ${{ env.ASSET }} ${{ env.ASSET_SUM }}
