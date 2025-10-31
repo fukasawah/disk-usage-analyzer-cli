@@ -79,32 +79,15 @@ git config core.hooksPath hooks
 cargo test
 ```
 
-### Check Code Quality
+### Development Workflow
 
-Format code:
-```bash
-cargo fmt
-```
-
-Run linter:
-```bash
-cargo clippy --all-targets --all-features
-```
-
-Check formatting without modifying files:
-```bash
-cargo fmt -- --check
-```
-
-### Before Committing
-
-Run these commands to ensure code quality (pre-commit hooks do this automatically):
+Before committing, run these commands to ensure code quality (pre-commit hooks run these automatically):
 
 ```bash
 # Format code
 cargo fmt
 
-# Run linter with all warnings as errors
+# Run linter with all warnings as errors (same as CI/pre-commit)
 cargo clippy --all-targets --all-features -- -D warnings
 
 # Run tests
@@ -114,6 +97,11 @@ cargo test --release
 Or run all at once:
 ```bash
 cargo fmt && cargo clippy --all-targets --all-features -- -D warnings && cargo test --release
+```
+
+Check formatting without modifying files:
+```bash
+cargo fmt -- --check
 ```
 
 ### Measure Test Coverage
