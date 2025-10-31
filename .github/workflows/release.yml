@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+# We need this to be able to create releases.
+permissions:
+  contents: write
+
 env:
   CARGO_TERM_COLOR: always
 
