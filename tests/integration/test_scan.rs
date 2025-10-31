@@ -1,5 +1,6 @@
 //! Integration test for scan command
 
+use crate::fixtures::write_file_sync;
 use dua::{ScanOptions, SizeBasis};
 use std::fs;
 use std::process::Command;
@@ -26,8 +27,8 @@ fn test_scan_via_api() {
     // Create test structure
     fs::create_dir_all(root.join("dir1")).unwrap();
     fs::create_dir_all(root.join("dir2")).unwrap();
-    fs::write(root.join("file.txt"), b"test content").unwrap();
-    fs::write(root.join("dir1/file1.txt"), b"hello world").unwrap();
+    write_file_sync(root.join("file.txt"), b"test content").unwrap();
+    write_file_sync(root.join("dir1/file1.txt"), b"hello world").unwrap();
 
     let opts = ScanOptions {
         basis: SizeBasis::Logical,

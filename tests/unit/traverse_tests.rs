@@ -2,6 +2,7 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::fixtures::write_file_sync;
     use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
@@ -13,8 +14,8 @@ mod tests {
 
         // Create test structure
         fs::create_dir_all(root.join("subdir")).unwrap();
-        fs::write(root.join("file1.txt"), b"hello").unwrap();
-        fs::write(root.join("subdir/file2.txt"), b"world").unwrap();
+        write_file_sync(root.join("file1.txt"), b"hello").unwrap();
+        write_file_sync(root.join("subdir/file2.txt"), b"world").unwrap();
 
         let opts = ScanOptions {
             basis: SizeBasis::Logical,

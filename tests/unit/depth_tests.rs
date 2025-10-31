@@ -2,6 +2,7 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::fixtures::write_file_sync;
     use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
@@ -13,9 +14,9 @@ mod tests {
 
         // Create nested structure
         fs::create_dir_all(root.join("level1/level2/level3")).unwrap();
-        fs::write(root.join("level1/file1.txt"), b"test").unwrap();
-        fs::write(root.join("level1/level2/file2.txt"), b"test").unwrap();
-        fs::write(root.join("level1/level2/level3/file3.txt"), b"test").unwrap();
+        write_file_sync(root.join("level1/file1.txt"), b"test").unwrap();
+        write_file_sync(root.join("level1/level2/file2.txt"), b"test").unwrap();
+        write_file_sync(root.join("level1/level2/level3/file3.txt"), b"test").unwrap();
 
         // Scan with depth limit of 1
         let opts = ScanOptions {
@@ -48,7 +49,7 @@ mod tests {
 
         // Create nested structure
         fs::create_dir_all(root.join("a/b/c/d")).unwrap();
-        fs::write(root.join("a/b/c/d/file.txt"), b"deep").unwrap();
+        write_file_sync(root.join("a/b/c/d/file.txt"), b"deep").unwrap();
 
         // Scan without depth limit
         let opts = ScanOptions {

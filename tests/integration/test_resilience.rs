@@ -2,6 +2,7 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::fixtures::write_file_sync;
     use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
@@ -14,8 +15,8 @@ mod tests {
         // Create some accessible directories
         fs::create_dir_all(root.join("accessible1")).unwrap();
         fs::create_dir_all(root.join("accessible2")).unwrap();
-        fs::write(root.join("accessible1/file1.txt"), b"content1").unwrap();
-        fs::write(root.join("accessible2/file2.txt"), b"content2").unwrap();
+        write_file_sync(root.join("accessible1/file1.txt"), b"content1").unwrap();
+        write_file_sync(root.join("accessible2/file2.txt"), b"content2").unwrap();
 
         // Try to create an inaccessible directory (this might not work in all environments)
         let inaccessible_dir = root.join("inaccessible");
@@ -78,7 +79,7 @@ mod tests {
 
         // Create many small files with known content
         for i in 0..50 {
-            fs::write(root.join(format!("file{i}.txt")), format!("{i}")).unwrap();
+            write_file_sync(root.join(format!("file{i}.txt")), format!("{i}")).unwrap();
         }
 
         let opts = ScanOptions {

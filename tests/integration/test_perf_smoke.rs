@@ -2,6 +2,7 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::fixtures::write_file_sync;
     use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use std::time::Instant;
@@ -20,7 +21,7 @@ mod tests {
 
             for j in 0..10 {
                 let file_path = dir.join(format!("file{j}.txt"));
-                fs::write(file_path, format!("Content {i}-{j}")).unwrap();
+                write_file_sync(file_path, format!("Content {i}-{j}")).unwrap();
             }
         }
 
@@ -59,7 +60,7 @@ mod tests {
         for i in 0..20 {
             current = current.join(format!("level{i}"));
             fs::create_dir_all(&current).unwrap();
-            fs::write(current.join("file.txt"), format!("Level {i}")).unwrap();
+            write_file_sync(current.join("file.txt"), format!("Level {i}")).unwrap();
         }
 
         let opts = ScanOptions {

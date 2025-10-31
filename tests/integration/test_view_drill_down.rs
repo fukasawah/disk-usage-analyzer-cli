@@ -2,6 +2,7 @@
 
 #[cfg(test)]
 mod tests {
+    use crate::fixtures::write_file_sync;
     use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
@@ -13,9 +14,9 @@ mod tests {
 
         // Create test structure
         fs::create_dir_all(root.join("subdir/nested")).unwrap();
-        fs::write(root.join("file1.txt"), b"root file").unwrap();
-        fs::write(root.join("subdir/file2.txt"), b"subdir file").unwrap();
-        fs::write(root.join("subdir/nested/file3.txt"), b"nested file").unwrap();
+        write_file_sync(root.join("file1.txt"), b"root file").unwrap();
+        write_file_sync(root.join("subdir/file2.txt"), b"subdir file").unwrap();
+        write_file_sync(root.join("subdir/nested/file3.txt"), b"nested file").unwrap();
 
         let opts = ScanOptions {
             basis: SizeBasis::Logical,
@@ -44,9 +45,9 @@ mod tests {
 
         // Create deeper structure
         fs::create_dir_all(root.join("a/b/c")).unwrap();
-        fs::write(root.join("a/file.txt"), b"a").unwrap();
-        fs::write(root.join("a/b/file.txt"), b"b").unwrap();
-        fs::write(root.join("a/b/c/file.txt"), b"c").unwrap();
+        write_file_sync(root.join("a/file.txt"), b"a").unwrap();
+        write_file_sync(root.join("a/b/file.txt"), b"b").unwrap();
+        write_file_sync(root.join("a/b/c/file.txt"), b"c").unwrap();
 
         let opts = ScanOptions {
             basis: SizeBasis::Logical,

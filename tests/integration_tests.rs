@@ -1,5 +1,7 @@
 // Integration tests entry point
 
+mod fixtures;
+
 mod integration {
     mod test_errors;
     mod test_perf_smoke;

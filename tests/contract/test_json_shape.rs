@@ -1,5 +1,6 @@
 //! Contract test for JSON output shape
 
+use crate::fixtures::write_file_sync;
 use dua::{ScanOptions, SizeBasis};
 use std::fs;
 use tempfile::TempDir;
@@ -11,7 +12,7 @@ fn test_json_output_fields() {
 
     // Create simple test structure
     fs::create_dir_all(root.join("testdir")).unwrap();
-    fs::write(root.join("testdir/file.txt"), b"test").unwrap();
+    write_file_sync(root.join("testdir/file.txt"), b"test").unwrap();
 
     let opts = ScanOptions {
         basis: SizeBasis::Logical,
