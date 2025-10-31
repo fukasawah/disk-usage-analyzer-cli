@@ -76,7 +76,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let root = temp_dir.path();
 
-        // Create many small files
+        // Create many small files with known content
         for i in 0..50 {
             fs::write(root.join(format!("file{i}.txt")), format!("{i}")).unwrap();
         }
@@ -91,5 +91,35 @@ mod tests {
         assert!(result.is_ok());
         let summary = result.unwrap();
         assert!(!summary.entries.is_empty());
+
+        // Verify all paths are normalized (cross-platform test)
+        for entry in &summary.entries {
+            let path = &entry.path;
+            assert!(
+                !entry.path.contains('\\'),
+                "Path should be normalized: {path}"
+            );
+        }
+
+        // Verify specific files with known sizes
+        let first_entry = summary
+            .entries
+            .iter()
+            .find(|e| e.path.ends_with("file0.txt"))
+            .expect("Should find file0.txt");
+        assert_eq!(
+            first_entry.size_bytes, 1,
+            "file0.txt should be 1 byte ('0')"
+        );
+
+        let second_entry = summary
+            .entries
+            .iter()
+            .find(|e| e.path.ends_with("file10.txt"))
+            .expect("Should find file10.txt");
+        assert_eq!(
+            second_entry.size_bytes, 2,
+            "file10.txt should be 2 bytes ('10')"
+        );
     }
 }

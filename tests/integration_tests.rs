@@ -18,5 +18,6 @@ mod contract {
 mod unit {
     mod aggregate_tests;
     mod depth_tests;
+    mod normalize_path_tests;
     mod traverse_tests;
 }

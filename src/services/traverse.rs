@@ -6,6 +6,38 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Normalize path for cross-platform storage
+/// On Windows: Convert backslashes to forward slashes for consistency
+/// On Unix: Use path as-is (backslash is a valid filename character)
+#[cfg(windows)]
+fn normalize_path(path: &Path) -> String {
+    use std::borrow::Cow;
+    let path_str = path.to_string_lossy();
+
+    // Only allocate if we actually need to replace backslashes
+    if path_str.contains('\\') {
+        path_str.replace('\\', "/")
+    } else {
+        // Avoid allocation if there are no backslashes
+        match path_str {
+            Cow::Borrowed(s) => s.to_string(),
+            Cow::Owned(s) => s,
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn normalize_path(path: &Path) -> String {
+    use std::borrow::Cow;
+    let path_str = path.to_string_lossy();
+
+    // On Unix, avoid allocation when possible
+    match path_str {
+        Cow::Borrowed(s) => s.to_string(),
+        Cow::Owned(s) => s,
+    }
+}
+
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 
@@ -90,19 +122,35 @@ impl TraversalContext {
         use crate::services::size;
 
         match self.options.basis {
-            SizeBasis::Logical => size::logical_size(metadata),
+            SizeBasis::Logical => {
+                let s = size::logical_size(metadata);
+                log::trace!("Logical size for {}: {s}", path.display());
+                s
+            }
             SizeBasis::Physical => {
                 #[cfg(unix)]
                 {
-                    size::physical_size_from_metadata(metadata)
+                    let s = size::physical_size_from_metadata(metadata);
+                    log::trace!("Physical size (Unix) for {}: {s}", path.display());
+                    s
                 }
                 #[cfg(windows)]
                 {
-                    size::physical_size_from_path(path).unwrap_or_else(|_| metadata.len())
+                    let s = size::physical_size_from_path(path).unwrap_or_else(|e| {
+                        log::warn!(
+                            "Failed to get physical size for {}: {e}, using logical size",
+                            path.display()
+                        );
+                        metadata.len()
+                    });
+                    log::trace!("Physical size (Windows) for {}: {s}", path.display());
+                    s
                 }
                 #[cfg(not(any(unix, windows)))]
                 {
-                    size::physical_size_from_metadata(metadata)
+                    let s = size::physical_size_from_metadata(metadata);
+                    log::trace!("Physical size (other) for {}: {s}", path.display());
+                    s
                 }
             }
         }
@@ -157,6 +205,7 @@ pub fn traverse_directory<P: AsRef<Path>>(
 }
 
 /// Recursive traversal implementation
+#[allow(clippy::too_many_lines)]
 fn traverse_recursive(
     current: &Path,
     depth: u16,
@@ -248,15 +297,16 @@ fn traverse_recursive(
                 let within_depth_limit = context.max_depth.is_none_or(|max| file_depth <= max);
 
                 if within_depth_limit {
-                    let parent_path_str = current.to_string_lossy().to_string();
+                    let parent_path_str = normalize_path(current);
                     let file_entry = DirectoryEntry {
-                        path: entry_path.to_string_lossy().to_string(),
+                        path: normalize_path(&entry_path),
                         parent_path: Some(parent_path_str),
                         depth: file_depth,
                         size_bytes: file_size,
                         file_count: 0,
                         dir_count: 0,
                     };
+                    log::debug!("File entry: {} (size: {})", file_entry.path, file_size);
                     context.entries.insert(entry_path, file_entry);
                 }
             } else if entry_metadata.is_dir() {
@@ -267,16 +317,21 @@ fn traverse_recursive(
         }
 
         // Record this directory entry
-        let parent_path = current.parent().map(|p| p.to_string_lossy().to_string());
+        let parent_path = current.parent().map(normalize_path);
+        let normalized_path = normalize_path(current);
 
         let entry = DirectoryEntry {
-            path: current.to_string_lossy().to_string(),
+            path: normalized_path.clone(),
             parent_path,
             depth,
             size_bytes: total_size,
             file_count,
             dir_count,
         };
+
+        log::debug!(
+            "Directory entry: {normalized_path} (size: {total_size}, files: {file_count}, dirs: {dir_count}, depth: {depth})"
+        );
 
         context.entries.insert(current.to_path_buf(), entry);
 

@@ -7,6 +7,10 @@ use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
 use std::process;
 
 fn main() {
+    // Initialize logger (controlled by RUST_LOG environment variable)
+    // Example: RUST_LOG=debug dua scan /path
+    env_logger::init();
+
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
