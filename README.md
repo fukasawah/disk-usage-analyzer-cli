@@ -96,6 +96,26 @@ Check formatting without modifying files:
 cargo fmt -- --check
 ```
 
+### Before Committing
+
+Run these commands to ensure code quality (pre-commit hooks do this automatically):
+
+```bash
+# Format code
+cargo fmt
+
+# Run linter with all warnings as errors
+cargo clippy --all-targets --all-features -- -D warnings
+
+# Run tests
+cargo test --release
+```
+
+Or run all at once:
+```bash
+cargo fmt && cargo clippy --all-targets --all-features -- -D warnings && cargo test --release
+```
+
 ### Measure Test Coverage
 
 ```bash
