@@ -32,7 +32,8 @@ tempfile = "3.14"
 
 # Release profile optimized for binary size
 [profile.release]
-opt-level = "s"        # Optimize for size (balanced size/speed)
+opt-level = "z"        # Optimize for size (aggressive) - faster build & smaller binary than "s"
 lto = "fat"            # Link-time optimization (maximum)
 codegen-units = 1      # Single codegen unit for better cross-crate optimization
 strip = true           # Strip debug symbols
+panic = "abort"        # Abort on panic (reduces unwinding code)
