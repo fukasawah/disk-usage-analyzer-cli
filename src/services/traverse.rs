@@ -57,10 +57,18 @@ fn get_file_id(metadata: &fs::Metadata) -> FileId {
 }
 
 #[cfg(windows)]
-fn get_file_id(_metadata: &fs::Metadata) -> FileId {
-    // On Windows, we'd need to use GetFileInformationByHandle
-    // For now, use a placeholder that will count all files
-    FileId { dev: 0, ino: 0 }
+fn get_file_id(metadata: &fs::Metadata) -> FileId {
+    use std::os::windows::fs::MetadataExt;
+
+    let dev = metadata.volume_serial_number().unwrap_or(0);
+
+    let ino = metadata.file_index().unwrap_or_else(|| {
+        let high = u64::from(metadata.file_index_high());
+        let low = u64::from(metadata.file_index_low());
+        (high << 32) | low
+    });
+
+    FileId { dev, ino }
 }
 
 #[cfg(not(any(unix, windows)))]

@@ -7,10 +7,16 @@ set -e
 echo "🔍 Running pre-commit checks..."
 
 # Check formatting
-echo "📝 Checking code formatting..."
-if ! cargo fmt -- --check; then
-    echo "❌ Code formatting check failed!"
-    echo "💡 Run 'cargo fmt' to fix formatting issues"
+echo "📝 Formatting code..."
+if ! cargo fmt; then
+    echo "❌ Code formatting failed!"
+    echo "💡 Fix the issues above and re-run the commit"
+    exit 1
+fi
+
+# Ensure no formatting changes remain unstaged
+if ! git diff --exit-code; then
+    echo "ℹ️  Formatting changes were applied. Please review and stage them."
     exit 1
 fi
 
