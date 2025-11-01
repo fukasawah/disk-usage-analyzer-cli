@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: Traversal Optimization Control API
+  version: 0.1.0
+  description: |
+    Conceptual contract describing how the CLI exposes optimized traversal behavior
+    when modeled as service endpoints. Serves as a compatibility guide for CLI flags
+    and JSON status streams.
+servers:
+  - url: https://cli.local.fake
+    description: Placeholder host representing local CLI invocation
+paths:
+  /scans:
+    post:
+      summary: Start a scan with optimized traversal
+      operationId: startScan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartScanRequest'
+      responses:
+        '202':
+          description: Scan accepted and running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanSession'
+        '409':
+          description: Another scan already running for the same path with exclusive lock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /scans/{sessionId}:
+    get:
+      summary: Retrieve final scan totals
+      operationId: getScan
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Scan completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanSession'
+        '202':
+          description: Scan still running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressSnapshot'
+        '404':
+          description: Unknown session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /scans/{sessionId}/progress:
+    get:
+      summary: Stream progress updates for long-running scans
+      operationId: getProgress
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: afterTimestamp
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgressSnapshot'
+        '404':
+          description: Unknown session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    StartScanRequest:
+      type: object
+      required:
+        - path
+      properties:
+        path:
+          type: string
+          description: Directory to analyze
+        optimized:
+          type: boolean
+          default: true
+          description: Whether to use optimized traversal (maps to default CLI behavior)
+        legacyFallback:
+          type: boolean
+          default: false
+          description: Force legacy traversal for troubleshooting (maps to --legacy-traversal)
+        progressIntervalSeconds:
+          type: integer
+          minimum: 1
+          default: 2
+          description: Minimum interval between progress snapshots
+    ScanSession:
+      type: object
+      required:
+        - sessionId
+        - path
+        - filesystemType
+        - strategy
+        - totals
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        path:
+          type: string
+        filesystemType:
+          type: string
+          enum: [NTFS, APFS, ext4, XFS, Other]
+        strategy:
+          type: string
+          enum: [optimized, legacy]
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        durationMs:
+          type: integer
+        totals:
+          type: object
+          required: [files, directories, bytes]
+          properties:
+            files:
+              type: integer
+            directories:
+              type: integer
+            bytes:
+              type: integer
+        skippedEntries:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScanError'
+    ProgressSnapshot:
+      type: object
+      required:
+        - sessionId
+        - timestamp
+        - processedEntries
+        - processedBytes
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+        processedEntries:
+          type: integer
+        processedBytes:
+          type: integer
+        throughputBytesPerSecond:
+          type: integer
+        estimatedCompletionRatio:
+          type: number
+          minimum: 0
+          maximum: 1
+    ScanError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        path:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [warning, critical]
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
