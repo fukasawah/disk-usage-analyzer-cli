@@ -1,14 +1,16 @@
 #!/bin/bash
-# Benchmark script for performance validation
-# Measures scan and view operation performance
+# Benchmark script for traversal performance validation
+# Records optimized vs legacy scan timings and enforces release binary size budget
 
 set -e
 
 # Configuration
-BENCH_DIR="${BENCH_DIR:-/tmp/dux-benchmark}"
+BENCH_DIR="${BENCH_DIR:-/tmp/dua-benchmark}"
 SNAPSHOT_FILE="${SNAPSHOT_FILE:-/tmp/bench-snapshot.parquet}"
-BINARY="${BINARY:-./target/release/dux}"
-FILE_COUNT="${FILE_COUNT:-10000}"
+BINARY="${BINARY:-./target/release/dua}"
+LEGACY_FLAG="${LEGACY_FLAG:---legacy-traversal}"
+FILE_COUNT="${FILE_COUNT:-100000}"
+MAX_BINARY_SIZE=$((6 * 1024 * 1024))
 
 # Colors
 GREEN='\033[0;32m'
@@ -26,6 +28,36 @@ if [ ! -f "$BINARY" ]; then
     echo -e "${RED}Error: Binary not found at $BINARY${NC}"
     echo "Build with: cargo build --release"
     exit 1
+fi
+
+# Compute binary size (supports BSD and GNU stat)
+binary_size() {
+    if command -v stat >/dev/null 2>&1; then
+        if stat --format=%s "$BINARY" >/dev/null 2>&1; then
+            stat --format=%s "$BINARY"
+        else
+            stat -f%z "$BINARY"
+        fi
+    else
+        echo 0
+    fi
+}
+
+human_size() {
+    local bytes=$1
+    awk -v b="$bytes" 'BEGIN { split("B KB MB GB TB", u); s=1; while (b>=1024 && s<5) {b/=1024; s++} printf "%.2f %s", b, u[s] }'
+}
+
+BIN_SIZE_BYTES=$(binary_size)
+
+if [ "$BIN_SIZE_BYTES" -eq 0 ]; then
+    echo -e "${YELLOW}Warning: Unable to determine binary size (stat missing). Skipping size check.${NC}"
+else
+    echo "Binary size: $(human_size "$BIN_SIZE_BYTES")"
+    if [ "$BIN_SIZE_BYTES" -gt "$MAX_BINARY_SIZE" ]; then
+        echo -e "${RED}Error: Release binary exceeds 6 MB budget (${BIN_SIZE_BYTES} bytes)${NC}"
+        exit 1
+    fi
 fi
 
 # Create benchmark fixture if it doesn't exist
@@ -56,6 +88,7 @@ echo "  Test directory: $BENCH_DIR"
 echo "  File count: $(find "$BENCH_DIR" -type f | wc -l)"
 echo "  Directory count: $(find "$BENCH_DIR" -type d | wc -l)"
 echo "  Snapshot: $SNAPSHOT_FILE"
+echo "  Legacy flag: ${LEGACY_FLAG:-<disabled>}"
 echo ""
 
 # Function to measure time (cross-platform)
@@ -77,11 +110,16 @@ measure_time() {
     fi
 }
 
-# Benchmark: Scan operation
-echo -e "${YELLOW}Running scan benchmark...${NC}"
+echo -e "${YELLOW}Running legacy scan benchmark...${NC}"
 rm -f "$SNAPSHOT_FILE"
-SCAN_TIME=$(measure_time "$BINARY scan '$BENCH_DIR' --snapshot '$SNAPSHOT_FILE' > /dev/null 2>&1")
-echo -e "${GREEN}Scan completed in ${SCAN_TIME}ms${NC}"
+SCAN_TIME_LEG=$(measure_time "$BINARY scan '$BENCH_DIR' --snapshot '$SNAPSHOT_FILE' $LEGACY_FLAG > /dev/null 2>&1")
+echo -e "${GREEN}Legacy scan completed in ${SCAN_TIME_LEG}ms${NC}"
+
+# Benchmark: Scan operation
+echo -e "${YELLOW}Running optimized scan benchmark...${NC}"
+rm -f "$SNAPSHOT_FILE"
+SCAN_TIME_OPT=$(measure_time "$BINARY scan '$BENCH_DIR' --snapshot '$SNAPSHOT_FILE' > /dev/null 2>&1")
+echo -e "${GREEN}Optimized scan completed in ${SCAN_TIME_OPT}ms${NC}"
 
 # Verify snapshot was created
 if [ ! -f "$SNAPSHOT_FILE" ]; then
@@ -111,7 +149,12 @@ fi
 echo "===================================="
 echo "Benchmark Summary"
 echo "===================================="
-echo "Scan time:  ${SCAN_TIME}ms"
+echo "Optimized scan: ${SCAN_TIME_OPT}ms"
+echo "Legacy scan:    ${SCAN_TIME_LEG}ms"
+if [ "$SCAN_TIME_LEG" -gt 0 ]; then
+    SPEEDUP=$(awk -v opt="$SCAN_TIME_OPT" -v legacy="$SCAN_TIME_LEG" 'BEGIN { if (legacy == 0 || opt == 0) { print "N/A" } else { printf "%.2fx", legacy / opt } }')
+    echo "Speedup vs legacy: $SPEEDUP"
+fi
 echo "View time:  ${VIEW_TIME}ms"
 if [ -n "$DRILL_TIME" ]; then
     echo "Drill time: ${DRILL_TIME}ms"
@@ -125,7 +168,11 @@ RESULTS_FILE="benchmark-results.txt"
     echo "Binary: $BINARY"
     echo "Files: $(find "$BENCH_DIR" -type f | wc -l)"
     echo "Dirs: $(find "$BENCH_DIR" -type d | wc -l)"
-    echo "Scan: ${SCAN_TIME}ms"
+    echo "Optimized scan: ${SCAN_TIME_OPT}ms"
+    echo "Legacy scan: ${SCAN_TIME_LEG}ms"
+    if [ "$SCAN_TIME_LEG" -gt 0 ]; then
+        echo "Speedup: $SPEEDUP"
+    fi
     echo "View: ${VIEW_TIME}ms"
     [ -n "$DRILL_TIME" ] && echo "Drill: ${DRILL_TIME}ms"
     echo ""

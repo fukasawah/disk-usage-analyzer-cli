@@ -8,7 +8,6 @@ pub struct CliArgs {
 #[derive(Debug, Clone)]
 pub enum Command {
     Scan(ScanArgs),
-    Drill(DrillArgs),
     View(ViewArgs),
 }
 
@@ -20,17 +19,9 @@ pub struct ScanArgs {
     pub max_depth: Option<u16>,
     pub verbose: bool,
     pub quiet: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct DrillArgs {
-    pub root: String,
-    pub subdir: String,
-    pub basis: String,
-    pub top: usize,
-    pub sort: String,
-    pub json: bool,
-    pub max_depth: Option<u16>,
+    pub legacy_traversal: bool,
+    pub strategy_override: Option<String>,
+    pub progress_interval_secs: Option<u64>,
 }
 
 #[derive(Debug, Clone)]
@@ -51,6 +42,9 @@ impl Default for ScanArgs {
             max_depth: None,
             verbose: false,
             quiet: false,
+            legacy_traversal: false,
+            strategy_override: None,
+            progress_interval_secs: None,
         }
     }
 }
@@ -65,10 +59,6 @@ pub fn parse_args(args: &[String]) -> Result<CliArgs, String> {
         "scan" => {
             let scan_args = parse_scan_args(&args[2..])?;
             Command::Scan(scan_args)
-        }
-        "drill" => {
-            let drill_args = parse_drill_args(&args[2..])?;
-            Command::Drill(drill_args)
         }
         "view" => {
             let view_args = parse_view_args(&args[2..])?;
@@ -117,6 +107,29 @@ fn parse_scan_args(args: &[String]) -> Result<ScanArgs, String> {
             "--quiet" => {
                 scan_args.quiet = true;
             }
+            "--legacy-traversal" => {
+                scan_args.legacy_traversal = true;
+            }
+            "--strategy" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err("--strategy requires a value".to_string());
+                }
+                scan_args.strategy_override = Some(args[i].clone());
+            }
+            "--progress-interval" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err("--progress-interval requires a value".to_string());
+                }
+                let secs: u64 = args[i]
+                    .parse()
+                    .map_err(|_| "--progress-interval must be a positive integer".to_string())?;
+                if secs == 0 {
+                    return Err("--progress-interval must be greater than zero".to_string());
+                }
+                scan_args.progress_interval_secs = Some(secs);
+            }
             arg if !arg.starts_with("--") => {
                 if scan_args.path.is_empty() {
                     scan_args.path = arg.to_string();
@@ -134,87 +147,6 @@ fn parse_scan_args(args: &[String]) -> Result<ScanArgs, String> {
     }
 
     Ok(scan_args)
-}
-
-fn parse_drill_args(args: &[String]) -> Result<DrillArgs, String> {
-    let mut root = String::new();
-    let mut subdir = String::new();
-    let mut basis = "physical".to_string();
-    let mut top = 10;
-    let mut sort = "size".to_string();
-    let mut json = false;
-    let mut max_depth = None;
-    let mut i = 0;
-
-    while i < args.len() {
-        match args[i].as_str() {
-            "--basis" => {
-                i += 1;
-                if i >= args.len() {
-                    return Err("--basis requires a value".to_string());
-                }
-                basis.clone_from(&args[i]);
-            }
-            "--top" => {
-                i += 1;
-                if i >= args.len() {
-                    return Err("--top requires a value".to_string());
-                }
-                top = args[i]
-                    .parse()
-                    .map_err(|_| "--top must be a number".to_string())?;
-            }
-            "--sort" => {
-                i += 1;
-                if i >= args.len() {
-                    return Err("--sort requires a value".to_string());
-                }
-                sort.clone_from(&args[i]);
-            }
-            "--json" => {
-                json = true;
-            }
-            "--max-depth" => {
-                i += 1;
-                if i >= args.len() {
-                    return Err("--max-depth requires a value".to_string());
-                }
-                max_depth = Some(
-                    args[i]
-                        .parse()
-                        .map_err(|_| "--max-depth must be a number".to_string())?,
-                );
-            }
-            arg if !arg.starts_with("--") => {
-                if root.is_empty() {
-                    root = arg.to_string();
-                } else if subdir.is_empty() {
-                    subdir = arg.to_string();
-                } else {
-                    return Err(format!("Unexpected argument: {arg}"));
-                }
-            }
-            _ => return Err(format!("Unknown option: {}", args[i])),
-        }
-        i += 1;
-    }
-
-    if root.is_empty() {
-        return Err("Missing required argument: ROOT".to_string());
-    }
-    if subdir.is_empty() {
-        return Err("Missing required argument: SUBDIR".to_string());
-    }
-
-    Ok(DrillArgs {
-        root,
-        subdir,
-        basis,
-        top,
-        sort,
-        json,
-        max_depth,
-    })
 }
 
 fn parse_view_args(args: &[String]) -> Result<ViewArgs, String> {

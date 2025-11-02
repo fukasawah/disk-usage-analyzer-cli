@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod tests {
     use crate::fixtures::write_file_sync;
-    use dua::{HardlinkPolicy, ScanOptions, SizeBasis};
+    use dua::{ScanOptions, SizeBasis};
     use std::fs;
     use tempfile::TempDir;
 
@@ -22,9 +22,7 @@ mod tests {
         let opts = ScanOptions {
             basis: SizeBasis::Logical,
             max_depth: Some(1),
-            hardlink_policy: HardlinkPolicy::Dedupe,
-            follow_symlinks: false,
-            cross_filesystem: false,
+            ..ScanOptions::default()
         };
 
         let result = dua::scan_summary(root, &opts);
@@ -55,9 +53,7 @@ mod tests {
         let opts = ScanOptions {
             basis: SizeBasis::Logical,
             max_depth: None,
-            hardlink_policy: HardlinkPolicy::Dedupe,
-            follow_symlinks: false,
-            cross_filesystem: false,
+            ..ScanOptions::default()
         };
 
         let result = dua::scan_summary(root, &opts);

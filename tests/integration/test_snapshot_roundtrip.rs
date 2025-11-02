@@ -19,6 +19,7 @@ mod tests {
             size_basis: "physical".to_string(),
             hardlink_policy: "dedupe".to_string(),
             excludes: vec![],
+            strategy: "legacy".to_string(),
         };
 
         let entries = vec![
@@ -68,6 +69,7 @@ mod tests {
         assert_eq!(read_meta.scan_root, meta.scan_root);
         assert_eq!(read_meta.size_basis, meta.size_basis);
         assert_eq!(read_meta.hardlink_policy, meta.hardlink_policy);
+        assert_eq!(read_meta.strategy, meta.strategy);
 
         // Verify entries
         assert_eq!(read_entries.len(), entries.len());
@@ -96,6 +98,7 @@ mod tests {
             size_basis: "logical".to_string(),
             hardlink_policy: "count".to_string(),
             excludes: vec![],
+            strategy: "legacy".to_string(),
         };
 
         let write_result = write_snapshot(snapshot_path, &meta, &[], &[]);

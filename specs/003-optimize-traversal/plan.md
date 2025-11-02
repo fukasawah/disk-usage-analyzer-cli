@@ -1,7 +1,7 @@
 # Implementation Plan: Traversal Performance Optimization
 
-**Branch**: `001-optimize-traversal` | **Date**: 2025-11-01 | **Spec**: `/specs/001-optimize-traversal/spec.md`
-**Input**: Feature specification from `/specs/001-optimize-traversal/spec.md`
+**Branch**: `003-optimize-traversal` | **Date**: 2025-11-01 | **Spec**: `/specs/003-optimize-traversal/spec.md`
+**Input**: Feature specification from `/specs/003-optimize-traversal/spec.md`
 
 **Note**: Generated via `/speckit.plan`; reflects latest clarifications including 6 MB binary cap.
 
@@ -35,7 +35,7 @@ All gates satisfied at planning stage:
 ### Documentation (this feature)
 
 ```text
-specs/001-optimize-traversal/
+specs/003-optimize-traversal/
 ├── plan.md
 ├── research.md
 ├── data-model.md

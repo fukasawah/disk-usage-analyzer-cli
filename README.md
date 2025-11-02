@@ -7,10 +7,12 @@ Fast command-line tool to analyze disk usage and find space hogs. Written in Rus
 
 ## Features
 
-- **Fast**: Efficiently scan large directory trees
+- **Fast**: Efficiently scan large directory trees with optimized NTFS/POSIX traversals
+- **Filesystem aware**: Auto-detects the best traversal strategy and allows manual overrides
+- **Predictable progress**: Emits throttled progress snapshots every few seconds on long scans
 - **Snapshot support**: Save scan results to Parquet format for instant re-analysis
-- **Drill down**: View subdirectories without re-scanning
-- **JSON output**: Machine-readable format for scripting
+- **Drill down**: Focus on subdirectories from saved snapshots
+- **JSON output**: Machine-readable format for scripting, including progress telemetry
 - **Safe**: Doesn't follow symlinks or cross filesystem boundaries
 
 ## Installation
@@ -19,7 +21,7 @@ Download pre-built binaries from [Releases](https://github.com/fukasawah/dua/rel
 
 **Supported Platforms** (tested in CI):
 - Linux x86_64 (glibc): `dua-v*-linux-x86_64`
-- Linux x86_64 (musl, static): `dua-v*-linux-x86_64-musl` **← Recommended**
+- Linux x86_64 (musl, static): `dua-v*-linux-x86_64-musl`
 - Windows x86_64: `dua-v*-windows-x86_64.exe`
 
 **Unsupported** (builds provided but untested):
@@ -39,7 +41,7 @@ View results (instant, no re-scan):
 dua view usage.parquet
 ```
 
-Drill down into a subdirectory:
+Drill down into a subdirectory (no re-scan needed):
 ```bash
 dua view usage.parquet --path /path/to/directory/subdir
 ```
@@ -49,9 +51,30 @@ JSON output for scripting:
 dua view usage.parquet --json
 ```
 
+### Strategy selection and overrides
+
+- Optimized traversal is enabled by default and auto-detects the filesystem to pick the best backend (NTFS, POSIX, or legacy).
+- Force the legacy fallback for troubleshooting with `--legacy-traversal`.
+- Pin a specific optimized backend with `--strategy windows` or `--strategy posix` when testing platform behavior.
+
+```bash
+dua scan /data/projects --strategy posix --snapshot projects.parquet
+dua scan /data/projects --legacy-traversal --snapshot projects.parquet
+```
+
+### Progress telemetry
+
+- The CLI emits stderr progress snapshots roughly every 2 seconds by default once a scan exceeds the 3-second SLO.
+- Adjust the cadence with `--progress-interval <seconds>` for slower media.
+- Progress snapshots are captured in JSON output and stored in Parquet snapshots for later inspection.
+
+```bash
+dua scan /data/projects --progress-interval 1 --snapshot projects.parquet
+```
+
 ## Building from Source
 
-Requirements: Rust 1.77+
+Requirements: Rust 1.90+
 
 ```bash
 cargo build --release
@@ -102,9 +125,6 @@ cargo fmt && cargo clippy --all-targets --all-features -- -D warnings && cargo t
 Check formatting without modifying files:
 ```bash
 cargo fmt -- --check
-```
-
-### Measure Test Coverage
 
 ```bash
 cargo install cargo-llvm-cov

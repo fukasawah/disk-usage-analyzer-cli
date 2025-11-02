@@ -9,10 +9,14 @@ pub mod io;
 pub mod models;
 pub mod services;
 
-pub use models::{DirectoryEntry, ErrorItem, SnapshotMeta};
+pub use models::{DirectoryEntry, ErrorItem, ProgressSnapshot, SnapshotMeta};
+pub use services::traverse::progress::ProgressThrottler;
+pub use services::traverse::strategy::{StrategyRegistry, TraversalStrategy};
+pub use services::traverse::{StrategyKind, TraversalContext, TraversalDispatcher};
 
 use std::path::Path;
 use std::result;
+use std::time::Duration;
 
 /// Custom error type for the library
 #[derive(Debug)]
@@ -54,6 +58,8 @@ pub struct ScanOptions {
     pub hardlink_policy: HardlinkPolicy,
     pub follow_symlinks: bool,
     pub cross_filesystem: bool,
+    pub strategy_override: Option<StrategyKind>,
+    pub progress_interval: Duration,
 }
 
 impl Default for ScanOptions {
@@ -64,6 +70,8 @@ impl Default for ScanOptions {
             hardlink_policy: HardlinkPolicy::Dedupe,
             follow_symlinks: false,
             cross_filesystem: false,
+            strategy_override: None,
+            progress_interval: Duration::from_secs(2),
         }
     }
 }
@@ -88,6 +96,8 @@ pub struct Summary {
     pub errors: Vec<ErrorItem>,
     pub started_at: std::time::SystemTime,
     pub finished_at: std::time::SystemTime,
+    pub strategy: StrategyKind,
+    pub progress: Vec<ProgressSnapshot>,
 }
 
 /// Scan a directory and return a summary
@@ -117,13 +127,14 @@ pub fn scan_summary<P: AsRef<Path>>(root: P, opts: &ScanOptions) -> Result<Summa
 
     // Create traversal context
     let mut context = services::traverse::TraversalContext::new(opts.clone(), opts.max_depth);
+    let dispatcher = services::traverse::TraversalDispatcher::for_platform(opts);
 
     // Traverse the directory tree
-    let _ = services::traverse::traverse_directory(&root, &mut context)?;
+    let _ = dispatcher.traverse(&root, &mut context)?;
+    context.finalize_progress();
 
     // Extract entries and errors
-    let entries: Vec<DirectoryEntry> = context.entries.into_values().collect();
-    let errors = context.errors;
+    let (entries, errors, progress, strategy) = context.into_parts();
 
     let finished_at = std::time::SystemTime::now();
 
@@ -133,5 +144,7 @@ pub fn scan_summary<P: AsRef<Path>>(root: P, opts: &ScanOptions) -> Result<Summa
         errors,
         started_at,
         finished_at,
+        strategy,
+        progress,
     })
 }

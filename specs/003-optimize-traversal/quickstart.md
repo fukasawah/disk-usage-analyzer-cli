@@ -15,7 +15,7 @@ cargo build --release
 target/release/dua C:\path\to\dataset
 ```
 - Detects NTFS automatically and enables the large-fetch traversal strategy
-- Emits progress snapshots to stderr every ~2 seconds when runtime exceeds 3 seconds
+- Emits progress snapshots to stderr every ~2 seconds once runtime exceeds the 3-second SLO
 
 ## Compare with legacy traversal
 ```bash
@@ -26,10 +26,18 @@ target/release/dua --legacy-traversal C:\path\to\dataset
 
 ## Capture JSON output with progress events
 ```bash
-target/release/dua --json --progress-interval 2 /data/projects
+target/release/dua scan /data/projects --progress-interval 2 --snapshot projects.parquet
+dua view projects.parquet --json
 ```
-- Streams progress objects to stdout alongside final totals
-- Suitable for piping into monitoring scripts
+- The scan command emits throttled stderr progress updates at the requested cadence
+- The JSON view output includes recorded progress snapshots for downstream tooling
+
+## Tune progress cadence
+```bash
+target/release/dua scan /mnt/archive --progress-interval 5 --snapshot archive.parquet
+```
+- Increase the interval for noisy remote shares or decrease it for granular telemetry
+- Progress snapshots stored in the Parquet file reflect the requested cadence
 
 ## Validate performance
 ```bash
@@ -39,7 +47,7 @@ hyperfine \
   'target/release/dua --legacy-traversal C:\\path\\to\\dataset'
 ```
 - Ensure optimized traversal achieves ≤3s p95 runtime on NTFS
-- Document results under `specs/001-optimize-traversal/research.md`
+- Document results under `specs/003-optimize-traversal/research.md`
 
 ## Run regression tests
 ```bash

@@ -146,6 +146,7 @@ pub fn format_text_with_all_entries(
     let root_size: u64 = entries.iter().map(|e| e.size_bytes).sum();
 
     println!("{} ({})", summary.root, format_size(root_size));
+    println!("Strategy: {}", summary.strategy);
     println!();
     println!("{:<70} {:>10} {:>5}", "Path", "Size", "%");
     println!("{}", "─".repeat(88));
@@ -185,6 +186,7 @@ pub fn format_text_with_strategy(
     let root_size: u64 = entries.iter().map(|e| e.size_bytes).sum();
 
     println!("{} ({})", summary.root, format_size(root_size));
+    println!("Strategy: {}", summary.strategy);
     println!();
 
     // Print entries with hierarchical preview
@@ -307,7 +309,9 @@ fn get_children_from_all(
 pub fn format_json(summary: &Summary, entries: &[DirectoryEntry]) -> String {
     let output = serde_json::json!({
         "root": summary.root,
+        "strategy": summary.strategy.to_string(),
         "entries": entries,
+        "progress": summary.progress,
         "error_count": summary.errors.len(),
         "errors": if summary.errors.is_empty() {
             serde_json::Value::Null

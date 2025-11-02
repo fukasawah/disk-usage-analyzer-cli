@@ -50,6 +50,7 @@ pub fn write_snapshot(
         Field::new("meta_finished_at", DataType::Utf8, true),
         Field::new("meta_size_basis", DataType::Utf8, true),
         Field::new("meta_hardlink_policy", DataType::Utf8, true),
+        Field::new("meta_strategy", DataType::Utf8, true),
         // Error fields (stored separately, empty for entry rows)
         Field::new("error_path", DataType::Utf8, true),
         Field::new("error_code", DataType::Utf8, true),
@@ -204,6 +205,8 @@ fn create_entries_batch(
             Some(meta.hardlink_policy.as_str());
             len
         ]));
+    let meta_strategy: ArrayRef =
+        Arc::new(StringArray::from(vec![Some(meta.strategy.as_str()); len]));
 
     // Empty error fields for entry rows
     let error_paths: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; len]));
@@ -224,6 +227,7 @@ fn create_entries_batch(
             meta_finished,
             meta_basis,
             meta_policy,
+            meta_strategy,
             error_paths,
             error_codes,
             error_messages,
@@ -249,6 +253,7 @@ fn create_errors_batch(schema: &Arc<Schema>, errors: &[ErrorItem]) -> Result<Rec
     let meta_finished: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; len]));
     let meta_basis: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; len]));
     let meta_policy: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; len]));
+    let meta_strategy: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; len]));
 
     // Error fields
     let error_paths: ArrayRef = Arc::new(StringArray::from(
@@ -284,6 +289,7 @@ fn create_errors_batch(schema: &Arc<Schema>, errors: &[ErrorItem]) -> Result<Rec
             meta_finished,
             meta_basis,
             meta_policy,
+            meta_strategy,
             error_paths,
             error_codes,
             error_messages,
@@ -312,6 +318,8 @@ fn create_metadata_batch(schema: &Arc<Schema>, meta: &SnapshotMeta) -> Result<Re
             Some(meta.hardlink_policy.as_str());
             1
         ]));
+    let meta_strategy: ArrayRef =
+        Arc::new(StringArray::from(vec![Some(meta.strategy.as_str()); 1]));
 
     let error_paths: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; 1]));
     let error_codes: ArrayRef = Arc::new(StringArray::from(vec![None::<&str>; 1]));
@@ -331,6 +339,7 @@ fn create_metadata_batch(schema: &Arc<Schema>, meta: &SnapshotMeta) -> Result<Re
             meta_finished,
             meta_basis,
             meta_policy,
+            meta_strategy,
             error_paths,
             error_codes,
             error_messages,
@@ -350,6 +359,8 @@ fn extract_metadata(batch: &RecordBatch) -> Result<SnapshotMeta> {
         .ok_or_else(|| Error::new(ErrorKind::InvalidData, "Missing size_basis"))?;
     let hardlink_policy = get_string_value(batch, "meta_hardlink_policy", 0)?
         .ok_or_else(|| Error::new(ErrorKind::InvalidData, "Missing hardlink_policy"))?;
+    let strategy =
+        get_string_value(batch, "meta_strategy", 0)?.unwrap_or_else(|| "legacy".to_string());
 
     Ok(SnapshotMeta {
         scan_root,
@@ -358,6 +369,7 @@ fn extract_metadata(batch: &RecordBatch) -> Result<SnapshotMeta> {
         size_basis,
         hardlink_policy,
         excludes: vec![],
+        strategy,
     })
 }
 

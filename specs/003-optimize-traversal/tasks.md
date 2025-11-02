@@ -4,7 +4,7 @@ description: "Task list for traversal optimization implementation"
 
 # Tasks: Traversal Performance Optimization
 
-**Input**: Design documents from `/specs/001-optimize-traversal/`
+**Input**: Design documents from `/specs/003-optimize-traversal/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, quickstart.md, contracts/openapi.yaml
 
 **Tests**: Tests are REQUIRED per constitution. Each user story includes unit + integration coverage, parity checks between legacy and optimized modes, JSON schema assertions, and performance/size benchmarks to confirm ≤3 s SLO and ≤6 MB release binary.
@@ -23,8 +23,8 @@ description: "Task list for traversal optimization implementation"
 
 **Purpose**: Baseline toolchain and benchmarking guardrails
 
-- [ ] T001 Create Rust toolchain pin for 1.90.0 in `rust-toolchain.toml`
-- [ ] T002 Update `scripts/benchmark.sh` to record optimized vs legacy timings and fail if `target/release/dua` exceeds 6 MB
+- [X] T001 Create Rust toolchain pin for 1.90.0 in `rust-toolchain.toml`
+- [X] T002 Update `scripts/benchmark.sh` to record optimized vs legacy timings and fail if `target/release/dua` exceeds 6 MB
 
 ---
 
@@ -32,12 +32,12 @@ description: "Task list for traversal optimization implementation"
 
 **Purpose**: Core traversal scaffolding required by all stories
 
-- [ ] T003 Add `rayon`, `windows`, and `rustix` dependencies with minimal features in `Cargo.toml`
-- [ ] T004 Scaffold traversal dispatcher in `src/services/traverse/mod.rs` with documented invariants
-- [ ] T005 Define `TraversalStrategy` trait and shared contracts in `src/services/traverse/strategy.rs`
-- [ ] T006 Create progress throttling stub in `src/services/traverse/progress.rs`
-- [ ] T007 Update concurrent aggregation helpers in `src/services/aggregate.rs` for threaded reductions
-- [ ] T008 Expose new traversal module exports from `src/lib.rs`
+- [X] T003 Add `rayon`, `windows`, and `rustix` dependencies with minimal features in `Cargo.toml`
+- [X] T004 Scaffold traversal dispatcher in `src/services/traverse/mod.rs` with documented invariants
+- [X] T005 Define `TraversalStrategy` trait and shared contracts in `src/services/traverse/strategy.rs`
+- [X] T006 Create progress throttling stub in `src/services/traverse/progress.rs`
+- [X] T007 Update concurrent aggregation helpers in `src/services/aggregate.rs` for threaded reductions
+- [X] T008 Expose new traversal module exports from `src/lib.rs`
 
 **Checkpoint**: Foundation ready – user story implementation can now begin.
 
@@ -51,14 +51,14 @@ description: "Task list for traversal optimization implementation"
 
 ### Tests for User Story 1
 
-- [ ] T009 [P] [US1] Add NTFS benchmark regression in `tests/integration/test_perf_smoke.rs` enforcing ≤3 s p95
-- [ ] T010 [P] [US1] Add optimized vs legacy parity integration in `tests/integration/test_scan.rs`
-- [ ] T011 [US1] Extend aggregator concurrency assertions in `tests/unit/aggregate_tests.rs` for threaded folds
+- [X] T009 [P] [US1] Add NTFS benchmark regression in `tests/integration/test_perf_smoke.rs` enforcing ≤3 s p95
+- [X] T010 [P] [US1] Add optimized vs legacy parity integration in `tests/integration/test_scan.rs`
+- [X] T011 [US1] Extend aggregator concurrency assertions in `tests/unit/aggregate_tests.rs` for threaded folds
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implement Win32 large-fetch traversal pipeline in `src/services/traverse/windows.rs`
-- [ ] T013 [US1] Register NTFS strategy selection in `src/services/traverse/mod.rs`
+- [X] T012 [US1] Implement Win32 large-fetch traversal pipeline in `src/services/traverse/windows.rs`
+- [X] T013 [US1] Register NTFS strategy selection in `src/services/traverse/mod.rs`
 
 **Checkpoint**: Windows optimized traversal meets performance and parity requirements.
 
@@ -72,17 +72,17 @@ description: "Task list for traversal optimization implementation"
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Cover strategy detection permutations in `tests/unit/traverse_tests.rs`
-- [ ] T015 [P] [US2] Add CLI flag parsing tests in `tests/unit/cli_args_tests.rs`
-- [ ] T016 [P] [US2] Ensure JSON snapshot strategy field contract in `tests/contract/test_snapshot_json.rs`
+- [X] T014 [P] [US2] Cover strategy detection permutations in `tests/unit/traverse_tests.rs`
+- [X] T015 [P] [US2] Add CLI flag parsing tests in `tests/unit/cli_args_tests.rs`
+- [X] T016 [P] [US2] Ensure JSON snapshot strategy field contract in `tests/contract/test_snapshot_json.rs`
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Implement filesystem detection helper in `src/services/traverse/detect.rs`
-- [ ] T018 [US2] Implement POSIX `openat` traversal with batching in `src/services/traverse/posix.rs`
-- [ ] T019 [US2] Wire override and legacy flags in `src/cli/args.rs`
-- [ ] T020 [US2] Surface strategy selection in verbose output via `src/cli/output.rs`
-- [ ] T021 [US2] Embed strategy metadata in progress snapshots within `src/io/snapshot.rs`
+- [X] T017 [US2] Implement filesystem detection helper in `src/services/traverse/detect.rs`
+- [X] T018 [US2] Implement POSIX `openat` traversal with batching in `src/services/traverse/posix.rs`
+- [X] T019 [US2] Wire override and legacy flags in `src/cli/args.rs`
+- [X] T020 [US2] Surface strategy selection in verbose output via `src/cli/output.rs`
+- [X] T021 [US2] Embed strategy metadata in progress snapshots within `src/io/snapshot.rs`
 
 **Checkpoint**: CLI auto-detects strategies, honors overrides, and reports selected backend.
 
@@ -96,16 +96,16 @@ description: "Task list for traversal optimization implementation"
 
 ### Tests for User Story 3
 
-- [ ] T022 [P] [US3] Add slow-media progress cadence test in `tests/integration/test_resilience.rs`
-- [ ] T023 [P] [US3] Extend progress JSON schema assertions in `tests/contract/test_snapshot_json.rs`
+- [X] T022 [P] [US3] Add slow-media progress cadence test in `tests/integration/test_resilience.rs`
+- [X] T023 [P] [US3] Extend progress JSON schema assertions in `tests/contract/test_snapshot_json.rs`
 
 ### Implementation for User Story 3
 
-- [ ] T024 [US3] Finalize byte/time-based throttling logic in `src/services/traverse/progress.rs`
-- [ ] T025 [US3] Emit throttled progress snapshots from traversal loops in `src/services/traverse/windows.rs`
-- [ ] T026 [US3] Emit throttled progress snapshots from traversal loops in `src/services/traverse/posix.rs`
-- [ ] T027 [US3] Add `--progress-interval` flag handling and plumbing in `src/cli/args.rs`
-- [ ] T028 [US3] Pass progress configuration through dispatcher in `src/services/traverse/mod.rs`
+- [X] T024 [US3] Finalize byte/time-based throttling logic in `src/services/traverse/progress.rs`
+- [X] T025 [US3] Emit throttled progress snapshots from traversal loops in `src/services/traverse/windows.rs`
+- [X] T026 [US3] Emit throttled progress snapshots from traversal loops in `src/services/traverse/posix.rs`
+- [X] T027 [US3] Add `--progress-interval` flag handling and plumbing in `src/cli/args.rs`
+- [X] T028 [US3] Pass progress configuration through dispatcher in `src/services/traverse/mod.rs`
 
 **Checkpoint**: Progress reporting is predictable, cancellable, and consistent across outputs.
 
@@ -115,11 +115,11 @@ description: "Task list for traversal optimization implementation"
 
 **Purpose**: Documentation, validation, and evidence capture across stories
 
-- [ ] T029 [P] Refresh CLI documentation with new flags and strategy behavior in `README.md`
-- [ ] T030 [P] Update developer quickstart with progress flag usage in `specs/001-optimize-traversal/quickstart.md`
-- [ ] T031 Record benchmark + binary size evidence in `specs/001-optimize-traversal/research.md`
-- [ ] T032 Summarize final success metrics and clarifications in `specs/001-optimize-traversal/spec.md`
-- [ ] T033 Run and document final `cargo fmt`, `cargo clippy -D warnings`, `cargo test`, and `scripts/benchmark.sh` results in `specs/001-optimize-traversal/tasks.md`
+- [X] T029 [P] Refresh CLI documentation with new flags and strategy behavior in `README.md`
+- [X] T030 [P] Update developer quickstart with progress flag usage in `specs/003-optimize-traversal/quickstart.md`
+- [X] T031 Record benchmark + binary size evidence in `specs/003-optimize-traversal/research.md`
+- [X] T032 Summarize final success metrics and clarifications in `specs/003-optimize-traversal/spec.md`
+- [X] T033 Run and document final `cargo fmt`, `cargo clippy -D warnings`, `cargo test`, and `scripts/benchmark.sh` results in `specs/003-optimize-traversal/tasks.md`
 
 ---
 
@@ -162,6 +162,15 @@ Task T014: Expand strategy detection cases in tests/unit/traverse_tests.rs
 Task T015: Add CLI override parsing coverage in tests/unit/cli_args_tests.rs
 Task T016: Update contract snapshot JSON assertions
 ```
+
+---
+
+### Validation Log (2025-11-01)
+
+- `cargo fmt`
+- `cargo clippy --all-targets --all-features -- -D warnings` → pass (dev profile, 1.43s)
+- `cargo test` → pass (44 integration/unit tests, 1 ignored)
+- `./scripts/benchmark.sh` → binary 4.20 MB; optimized scan 851 ms; legacy scan 635 ms; view 68 ms; view drill-down 65 ms; snapshot 5.0 MiB
 
 ---
 

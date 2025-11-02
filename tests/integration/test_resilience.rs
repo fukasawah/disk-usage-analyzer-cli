@@ -5,6 +5,7 @@ mod tests {
     use crate::fixtures::write_file_sync;
     use dua::{ScanOptions, SizeBasis};
     use std::fs;
+    use std::time::Duration;
     use tempfile::TempDir;
 
     #[test]
@@ -122,5 +123,54 @@ mod tests {
             second_entry.size_bytes, 2,
             "file10.txt should be 2 bytes ('10')"
         );
+    }
+
+    #[test]
+    fn progress_cadence_respects_interval() {
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+
+        // Create large files to trigger byte-based progress snapshots.
+        for i in 0..16 {
+            write_file_sync(
+                root.join(format!("blob_{i:02}.bin")),
+                vec![0_u8; 128 * 1024],
+            )
+            .unwrap();
+        }
+
+        let mut opts = ScanOptions {
+            basis: SizeBasis::Logical,
+            ..Default::default()
+        };
+        opts.progress_interval = Duration::from_millis(200);
+
+        let summary = dua::scan_summary(root, &opts).expect("scan should succeed");
+        let snapshots = summary.progress;
+
+        assert!(
+            snapshots.len() >= 2,
+            "expected at least one intermediate progress snapshot"
+        );
+
+        for window in snapshots.windows(2) {
+            let delta = window[1]
+                .timestamp_ms
+                .saturating_sub(window[0].timestamp_ms);
+            let max_interval =
+                u64::try_from(opts.progress_interval.as_millis()).unwrap_or(u64::MAX);
+            assert!(
+                delta <= max_interval,
+                "progress gap {delta}ms exceeded interval {max_interval}ms"
+            );
+        }
+
+        if let Some(last) = snapshots.last() {
+            assert_eq!(
+                last.estimated_completion_ratio,
+                Some(1.0),
+                "final snapshot should indicate completion"
+            );
+        }
     }
 }

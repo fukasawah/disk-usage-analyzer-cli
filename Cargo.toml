@@ -1,6 +1,6 @@
 [package]
 name = "dua"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Fast command-line tool to analyze disk usage and find space hogs"
@@ -25,8 +25,13 @@ log = "0.4"
 parquet = { version = "53.2", default-features = false, features = ["arrow", "snap"] }
 arrow-array = "53.4"
 arrow-schema = "53.4"
+rayon = "1.10"
+
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "0.38", default-features = false, features = ["fs", "std"] }
 
 [target.'cfg(windows)'.dependencies]
+windows = { version = "0.57", features = ["Win32_Storage_FileSystem", "Win32_Foundation"] }
 windows-sys = { version = "0.59", features = ["Win32_Storage_FileSystem", "Win32_Foundation"] }
 
 [dev-dependencies]
