@@ -8,9 +8,13 @@ use super::legacy;
 use super::strategy::TraversalStrategy;
 use super::{StrategyKind, TraversalContext};
 use crate::ScanOptions;
-use crate::models::DirectoryEntry;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+#[cfg(unix)]
+use crate::models::DirectoryEntry;
+#[cfg(unix)]
+use std::path::PathBuf;
 
 #[cfg(unix)]
 use rayon::prelude::*;

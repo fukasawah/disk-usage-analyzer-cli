@@ -146,25 +146,28 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
     let search_wide = to_wide_null(&search_spec);
     let mut find_data = MaybeUninit::<WIN32_FIND_DATAW>::uninit();
 
-    let raw_handle = unsafe {
+    let handle = match unsafe {
         FindFirstFileExW(
             PCWSTR(search_wide.as_ptr()),
             FindExInfoBasic,
             find_data.as_mut_ptr() as *mut _,
             FindExSearchNameMatch,
             None,
-            FIND_FIRST_EX_LARGE_FETCH.0,
+            FIND_FIRST_EX_LARGE_FETCH,
         )
-    };
-
-    if raw_handle == INVALID_HANDLE_VALUE {
-        let err = io::Error::last_os_error();
-        if !matches!(err.raw_os_error(), Some(code) if code == ERROR_FILE_NOT_FOUND.0 as i32) {
-            context.record_error(current, &err);
+    } {
+        Ok(handle) => SearchHandle::new(handle),
+        Err(err) => {
+            let io_err: io::Error = err.into();
+            if !matches!(io_err.raw_os_error(), Some(code) if code == ERROR_FILE_NOT_FOUND.0 as i32)
+            {
+                context.record_error(current, &io_err);
+            }
             return Ok(0);
         }
-    } else {
-        let handle = SearchHandle::new(raw_handle);
+    };
+
+    {
         let mut data = unsafe { find_data.assume_init() };
 
         loop {
@@ -180,16 +183,20 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
             )?;
 
             let mut next = MaybeUninit::<WIN32_FIND_DATAW>::uninit();
-            let status = unsafe { FindNextFileW(handle.raw(), next.as_mut_ptr()) };
-            if status.as_bool() {
-                data = unsafe { next.assume_init() };
-            } else {
-                let err = io::Error::last_os_error();
-                if !matches!(err.raw_os_error(), Some(code) if code == ERROR_NO_MORE_FILES.0 as i32)
-                {
-                    context.record_error(current, &err);
+            match unsafe { FindNextFileW(handle.raw(), next.as_mut_ptr()) } {
+                Ok(()) => {
+                    data = unsafe { next.assume_init() };
                 }
-                break;
+                Err(err) => {
+                    let io_err: io::Error = err.into();
+                    if !matches!(
+                        io_err.raw_os_error(),
+                        Some(code) if code == ERROR_NO_MORE_FILES.0 as i32
+                    ) {
+                        context.record_error(current, &io_err);
+                    }
+                    break;
+                }
             }
         }
     }
@@ -332,8 +339,9 @@ impl SearchHandle {
 impl Drop for SearchHandle {
     fn drop(&mut self) {
         if self.0 != INVALID_HANDLE_VALUE {
-            unsafe {
-                FindClose(self.0);
+            if let Err(err) = unsafe { FindClose(self.0) } {
+                let io_err: io::Error = err.into();
+                log::warn!("FindClose failed for traversal handle: {io_err}");
             }
             self.0 = INVALID_HANDLE_VALUE;
         }

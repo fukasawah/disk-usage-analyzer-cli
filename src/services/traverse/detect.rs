@@ -58,7 +58,7 @@ pub fn strategy_for_filesystem(kind: FilesystemKind) -> StrategyKind {
 }
 
 #[cfg(windows)]
-fn detect_windows_filesystem(path: &Path) -> FilesystemKind {
+fn detect_windows_filesystem(_path: &Path) -> FilesystemKind {
     // Placeholder implementation until full Win32 detection is added.
     FilesystemKind::Ntfs
 }
