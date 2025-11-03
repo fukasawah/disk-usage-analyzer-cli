@@ -30,7 +30,8 @@ use std::os::windows::ffi::{OsStrExt, OsStringExt};
 use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(windows)]
 use windows::Win32::Foundation::{
-    ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, HANDLE, INVALID_HANDLE_VALUE,
+    ERROR_FILE_NOT_FOUND, ERROR_INVALID_FUNCTION, ERROR_INVALID_PARAMETER, ERROR_NO_MORE_FILES,
+    ERROR_NOT_SUPPORTED, HANDLE, INVALID_HANDLE_VALUE,
 };
 #[cfg(windows)]
 use windows::Win32::Storage::FileSystem::{
@@ -146,19 +147,9 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
     let search_wide = to_wide_null(&search_spec);
     let mut find_data = MaybeUninit::<WIN32_FIND_DATAW>::uninit();
 
-    let handle = match unsafe {
-        FindFirstFileExW(
-            PCWSTR(search_wide.as_ptr()),
-            FindExInfoBasic,
-            find_data.as_mut_ptr() as *mut _,
-            FindExSearchNameMatch,
-            None,
-            FIND_FIRST_EX_LARGE_FETCH,
-        )
-    } {
-        Ok(handle) => SearchHandle::new(handle),
-        Err(err) => {
-            let io_err: io::Error = err.into();
+    let handle = match open_search_handle(&search_wide, find_data.as_mut_ptr()) {
+        Ok(handle) => handle,
+        Err(io_err) => {
             if !matches!(io_err.raw_os_error(), Some(code) if code == ERROR_FILE_NOT_FOUND.0 as i32)
             {
                 context.record_error(current, &io_err);
@@ -226,6 +217,56 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
     context.register_directory_progress();
 
     Ok(total_size)
+}
+
+#[cfg(windows)]
+fn open_search_handle(
+    search_wide: &[u16],
+    find_data: *mut WIN32_FIND_DATAW,
+) -> Result<SearchHandle, io::Error> {
+    let initial = unsafe {
+        FindFirstFileExW(
+            PCWSTR(search_wide.as_ptr()),
+            FindExInfoBasic,
+            find_data as *mut _,
+            FindExSearchNameMatch,
+            None,
+            FIND_FIRST_EX_LARGE_FETCH,
+        )
+    };
+
+    match initial {
+        Ok(handle) => Ok(SearchHandle::new(handle)),
+        Err(err) => {
+            let io_err: io::Error = err.into();
+            if matches!(io_err.raw_os_error(), Some(code) if is_large_fetch_unsupported(code)) {
+                let fallback = unsafe {
+                    FindFirstFileExW(
+                        PCWSTR(search_wide.as_ptr()),
+                        FindExInfoBasic,
+                        find_data as *mut _,
+                        FindExSearchNameMatch,
+                        None,
+                        0,
+                    )
+                };
+
+                fallback
+                    .map(SearchHandle::new)
+                    .map_err(|fallback_err| fallback_err.into())
+            } else {
+                Err(io_err)
+            }
+        }
+    }
+}
+
+#[cfg(windows)]
+fn is_large_fetch_unsupported(code: i32) -> bool {
+    let code = code as u32;
+    code == ERROR_INVALID_PARAMETER.0
+        || code == ERROR_INVALID_FUNCTION.0
+        || code == ERROR_NOT_SUPPORTED.0
 }
 
 #[cfg(windows)]

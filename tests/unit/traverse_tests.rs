@@ -29,8 +29,16 @@ mod tests {
         assert!(result.is_ok());
 
         let summary = result.unwrap();
-        assert!(!summary.entries.is_empty());
-        assert_eq!(summary.errors.len(), 0);
+        assert!(
+            !summary.entries.is_empty(),
+            "expected at least one entry, got {:?}",
+            summary.entries
+        );
+        assert!(
+            summary.errors.is_empty(),
+            "unexpected traversal errors: {:?}",
+            summary.errors
+        );
     }
 
     #[test]
