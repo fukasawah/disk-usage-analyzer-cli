@@ -181,10 +181,19 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
                 }
                 Err(err) => {
                     let io_err: io::Error = err.into();
-                    if !matches!(
-                        io_err.raw_os_error(),
-                        Some(code) if code == ERROR_NO_MORE_FILES.0 as i32
-                    ) {
+                    // Normalize raw OS error to Win32 code (handles HRESULT-wrapped codes
+                    // like 0x80070012 which appear as negative values) by taking the
+                    // lower 16 bits. If the resulting Win32 code is NOT ERROR_NO_MORE_FILES
+                    // then record it; otherwise treat it as end-of-directory sentinel.
+                    let should_record = match io_err.raw_os_error() {
+                        Some(raw) => {
+                            let win32_code = (raw as u32) & 0xffff;
+                            win32_code != ERROR_NO_MORE_FILES.0 as u32
+                        }
+                        None => true,
+                    };
+
+                    if should_record {
                         context.record_error(current, &io_err);
                     }
                     break;
@@ -269,11 +278,17 @@ fn is_large_fetch_unsupported(code: i32) -> bool {
 
 #[cfg(windows)]
 fn is_empty_dir_error(err: &io::Error) -> bool {
-    matches!(
-        err.raw_os_error(),
-        Some(code)
-            if code == ERROR_FILE_NOT_FOUND.0 as i32 || code == ERROR_NO_MORE_FILES.0 as i32
-    )
+    match err.raw_os_error() {
+        Some(code) => {
+            // Some Windows errors surface as HRESULT values (negative numbers)
+            // like 0x80070012 which encodes a Win32 ERROR_NO_MORE_FILES (18).
+            // Normalize by using the lower 16 bits so both representations match.
+            let win32_code = (code as u32) & 0xffff;
+            win32_code == ERROR_FILE_NOT_FOUND.0 as u32
+                || win32_code == ERROR_NO_MORE_FILES.0 as u32
+        }
+        None => false,
+    }
 }
 
 #[cfg(windows)]
