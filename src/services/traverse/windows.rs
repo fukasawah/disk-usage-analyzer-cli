@@ -35,8 +35,8 @@ use windows::Win32::Foundation::{
 };
 #[cfg(windows)]
 use windows::Win32::Storage::FileSystem::{
-    FIND_FIRST_EX_LARGE_FETCH, FindClose, FindExInfoBasic, FindExSearchNameMatch, FindFirstFileExW,
-    FindNextFileW, WIN32_FIND_DATAW,
+    FIND_FIRST_EX_FLAGS, FIND_FIRST_EX_LARGE_FETCH, FindClose, FindExInfoBasic,
+    FindExSearchNameMatch, FindFirstFileExW, FindNextFileW, WIN32_FIND_DATAW,
 };
 #[cfg(windows)]
 use windows::core::PCWSTR;
@@ -247,7 +247,7 @@ fn open_search_handle(
                         find_data as *mut _,
                         FindExSearchNameMatch,
                         None,
-                        0,
+                        FIND_FIRST_EX_FLAGS(0),
                     )
                 };
 

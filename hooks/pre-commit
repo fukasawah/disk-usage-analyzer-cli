@@ -28,4 +28,24 @@ if ! cargo clippy --all-targets --all-features -- -D warnings -D clippy::implici
     exit 1
 fi
 
+# Ensure Windows GNU target still builds
+echo "🧪 Checking Windows GNU target build..."
+if ! command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1; then
+    echo "❌ Missing MinGW toolchain (x86_64-w64-mingw32-gcc)."
+    echo "💡 Install it via 'sudo apt-get install -y mingw-w64' (or the equivalent for your platform)."
+    exit 1
+fi
+
+if ! cargo check --target x86_64-pc-windows-gnu; then
+    echo "❌ Windows (gnu) cargo check failed!"
+    echo "💡 Install the target with 'rustup target add x86_64-pc-windows-gnu' if missing and fix build errors."
+    exit 1
+fi
+
+if ! cargo build --target x86_64-pc-windows-gnu; then
+    echo "❌ Windows (gnu) cargo build failed!"
+    echo "💡 Ensure the MinGW toolchain is installed and address the compiler errors above."
+    exit 1
+fi
+
 echo "✅ All pre-commit checks passed!"

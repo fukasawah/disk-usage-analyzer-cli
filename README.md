@@ -87,6 +87,22 @@ rustup target add x86_64-unknown-linux-musl
 cargo build --release --target x86_64-unknown-linux-musl
 ```
 
+### Cross-compiling for Windows (GNU toolchain)
+
+Install the MinGW toolchain and Rust target:
+
+```bash
+sudo apt-get install -y mingw-w64
+rustup target add x86_64-pc-windows-gnu
+```
+
+Then check and build the Windows binary locally (matches CI expectations):
+
+```bash
+cargo check --target x86_64-pc-windows-gnu
+cargo build --target x86_64-pc-windows-gnu
+```
+
 ## Development
 
 ### Setup Git Hooks
@@ -120,6 +136,9 @@ cargo test --release
 Or run all at once:
 ```bash
 cargo fmt && cargo clippy --all-targets --all-features -- -D warnings && cargo test --release
+
+# Verify the Windows GNU cross-target (requires mingw-w64 as above)
+cargo check --target x86_64-pc-windows-gnu && cargo build --target x86_64-pc-windows-gnu
 ```
 
 Check formatting without modifying files:

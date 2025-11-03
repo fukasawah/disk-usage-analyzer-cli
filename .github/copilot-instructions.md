@@ -21,6 +21,8 @@ tests/
 cargo fmt
 cargo clippy
 cargo test
+cargo check --target x86_64-pc-windows-gnu
+cargo build --target x86_64-pc-windows-gnu
 
 ## Code Style
 
@@ -32,6 +34,10 @@ Rust 1.90+ (Edition 2024): Follow standard conventions
 - 001-disk-usage-cli: Added Rust 1.90+ (Edition 2024)
 
 <!-- MANUAL ADDITIONS START -->
+## Platform Build Checks
+- Validate cross-platform builds locally: at minimum run `cargo check --target x86_64-pc-windows-gnu` and `cargo build --target x86_64-pc-windows-gnu` before submitting changes.
+- Ensure CI coverage for Windows MSVC stays green; investigate any cross-target regressions immediately.
+
 ## Release Checklist
 - Use `cargo set-version --locked <new-version>` to bump the crate version and keep `Cargo.lock` in sync.
 - Run `cargo test` (and any targeted release tests) before tagging.
