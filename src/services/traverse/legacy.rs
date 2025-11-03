@@ -77,6 +77,7 @@ impl TraversalContext {
     #[must_use]
     pub fn new(options: ScanOptions, max_depth: Option<u16>) -> Self {
         let interval = options.progress_interval;
+        let trigger = options.progress_byte_trigger;
         Self {
             root_device: Mutex::new(None),
             seen_inodes: Mutex::new(HashSet::new()),
@@ -88,7 +89,9 @@ impl TraversalContext {
             processed_entries: AtomicU64::new(0),
             processed_bytes: AtomicU64::new(0),
             progress_events: Mutex::new(Vec::new()),
-            progress_throttler: Mutex::new(ProgressThrottler::with_interval(interval)),
+            progress_throttler: Mutex::new(ProgressThrottler::with_interval_and_trigger(
+                interval, trigger,
+            )),
             start_instant: Instant::now(),
             progress_interval: interval,
         }
@@ -102,6 +105,15 @@ impl TraversalContext {
     pub fn set_strategy(&self, strategy: StrategyKind) {
         self.strategy
             .store(encode_strategy(strategy), Ordering::Relaxed);
+    }
+
+    pub fn update_progress_interval(&mut self, interval: Duration) {
+        self.progress_interval = interval;
+        let trigger = self.options.progress_byte_trigger;
+        match self.progress_throttler.get_mut() {
+            Ok(throttler) => throttler.set_interval(interval, trigger),
+            Err(err) => err.into_inner().set_interval(interval, trigger),
+        }
     }
 
     #[must_use]
@@ -216,6 +228,12 @@ impl TraversalContext {
         if let Some(snapshot) =
             throttler.consider(now, processed_bytes, processed_entries, elapsed_ms)
         {
+            drop(throttler);
+
+            if let Some(notifier) = &self.options.progress_notifier {
+                notifier(&snapshot);
+            }
+
             let mut events = self.progress_events.lock().unwrap();
             events.push(snapshot);
         }
@@ -238,12 +256,29 @@ impl TraversalContext {
 
         let mut throttler = self.progress_throttler.lock().unwrap();
         if let Some(snapshot) = throttler.force_emit(now, bytes, entries, elapsed_ms) {
+            drop(throttler);
+
             let mut events = self.progress_events.lock().unwrap();
-            if events.last().is_none_or(|last| {
+            let should_append = events.last().is_none_or(|last| {
                 last.processed_entries != snapshot.processed_entries
                     || last.processed_bytes != snapshot.processed_bytes
-            }) {
+            });
+
+            let snapshot_for_notifier = if should_append {
+                Some(snapshot.clone())
+            } else {
+                None
+            };
+
+            if should_append {
                 events.push(snapshot);
+            }
+            drop(events);
+
+            if let Some(snapshot) = snapshot_for_notifier
+                && let Some(notifier) = &self.options.progress_notifier
+            {
+                notifier(&snapshot);
             }
         }
     }

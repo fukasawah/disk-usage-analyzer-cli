@@ -17,7 +17,6 @@ pub struct ScanArgs {
     pub basis: String,
     pub snapshot: Option<String>,
     pub max_depth: Option<u16>,
-    pub verbose: bool,
     pub quiet: bool,
     pub legacy_traversal: bool,
     pub strategy_override: Option<String>,
@@ -40,7 +39,6 @@ impl Default for ScanArgs {
             basis: "physical".to_string(),
             snapshot: None,
             max_depth: None,
-            verbose: false,
             quiet: false,
             legacy_traversal: false,
             strategy_override: None,
@@ -100,9 +98,6 @@ fn parse_scan_args(args: &[String]) -> Result<ScanArgs, String> {
                         .parse()
                         .map_err(|_| "--max-depth must be a number".to_string())?,
                 );
-            }
-            "--verbose" => {
-                scan_args.verbose = true;
             }
             "--quiet" => {
                 scan_args.quiet = true;

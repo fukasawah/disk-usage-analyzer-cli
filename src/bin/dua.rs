@@ -2,10 +2,13 @@
 
 use dua::cli::args::{Command, parse_args};
 use dua::cli::output::format_json;
+use dua::models::ProgressSnapshot;
 use dua::services::aggregate::{SortBy, get_immediate_children, sort_and_limit};
+use dua::services::format::format_size;
 use dua::{ScanOptions, SizeBasis, StrategyKind};
 use std::process;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 fn main() {
@@ -51,6 +54,7 @@ fn main() {
     process::exit(exit_code);
 }
 
+#[allow(clippy::too_many_lines)]
 fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
     // Snapshot is required for scan
     let snapshot_path = if let Some(ref path) = args.snapshot {
@@ -90,12 +94,37 @@ fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
         opts.strategy_override = Some(StrategyKind::Legacy);
     }
 
-    if let Some(interval_secs) = args.progress_interval_secs {
+    let interval_override = if let Some(interval_secs) = args.progress_interval_secs {
         opts.progress_interval = Duration::from_secs(interval_secs);
+        true
+    } else {
+        false
+    };
+
+    if interval_override {
+        opts.progress_byte_trigger = u64::MAX;
     }
 
-    // Perform scan
-    if args.verbose || !args.quiet {
+    if !args.quiet {
+        opts.progress_notifier = Some(Arc::new(move |snapshot: &ProgressSnapshot| {
+            #[allow(clippy::cast_precision_loss)]
+            let elapsed_secs = snapshot.timestamp_ms as f64 / 1000.0;
+            let processed = format_size(snapshot.processed_bytes);
+            let entries = snapshot.processed_entries;
+            let throughput_suffix = snapshot
+                .recent_throughput_bytes_per_sec
+                .map(|bps| format!(", throughput ~{}/s", format_size(bps)))
+                .unwrap_or_default();
+            let completion_suffix = snapshot
+                .estimated_completion_ratio
+                .map(|r| format!(", completion {:.0}%", r * 100.0))
+                .unwrap_or_default();
+
+            eprintln!(
+                "[{elapsed_secs:6.1}s] {entries} entries, {processed} processed{throughput_suffix}{completion_suffix}",
+            );
+        }));
+
         eprintln!("Scanning: {}", args.path);
     }
 
@@ -111,7 +140,7 @@ fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
         }
     };
 
-    if args.verbose || !args.quiet {
+    if !args.quiet {
         eprintln!("Found {} entries", summary.entries.len());
         eprintln!("Saving snapshot to: {snapshot_path}");
     }
@@ -135,7 +164,7 @@ fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
         return 4;
     }
 
-    if args.verbose || !args.quiet {
+    if !args.quiet {
         eprintln!(
             "Snapshot saved: {} ({} entries)",
             snapshot_path,
@@ -246,7 +275,6 @@ fn print_help() {
         "    --strategy <NAME>         Override strategy: windows|posix|legacy (aliases: ntfs, unix)"
     );
     println!("    --progress-interval <S>   Emit progress updates every S seconds (default: 2)");
-    println!("    --verbose                 Print progress and summary details");
     println!("    --quiet                   Suppress non-error output");
     println!();
     println!("VIEW OPTIONS:");

@@ -14,9 +14,14 @@ pub use services::traverse::progress::ProgressThrottler;
 pub use services::traverse::strategy::{StrategyRegistry, TraversalStrategy};
 pub use services::traverse::{StrategyKind, TraversalContext, TraversalDispatcher};
 
+use crate::services::traverse::progress::DEFAULT_BYTE_TRIGGER;
 use std::path::Path;
 use std::result;
+use std::sync::Arc;
 use std::time::Duration;
+
+/// Shared notifier type used for reporting traversal progress snapshots.
+pub type ProgressNotifier = Arc<dyn Fn(&ProgressSnapshot) + Send + Sync + 'static>;
 
 /// Custom error type for the library
 #[derive(Debug)]
@@ -51,7 +56,7 @@ impl From<std::io::Error> for Error {
 pub type Result<T> = result::Result<T, Error>;
 
 /// Options for scanning a directory
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ScanOptions {
     pub basis: SizeBasis,
     pub max_depth: Option<u16>,
@@ -60,6 +65,8 @@ pub struct ScanOptions {
     pub cross_filesystem: bool,
     pub strategy_override: Option<StrategyKind>,
     pub progress_interval: Duration,
+    pub progress_notifier: Option<ProgressNotifier>,
+    pub progress_byte_trigger: u64,
 }
 
 impl Default for ScanOptions {
@@ -72,7 +79,28 @@ impl Default for ScanOptions {
             cross_filesystem: false,
             strategy_override: None,
             progress_interval: Duration::from_secs(2),
+            progress_notifier: None,
+            progress_byte_trigger: DEFAULT_BYTE_TRIGGER,
         }
+    }
+}
+
+impl std::fmt::Debug for ScanOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ScanOptions")
+            .field("basis", &self.basis)
+            .field("max_depth", &self.max_depth)
+            .field("hardlink_policy", &self.hardlink_policy)
+            .field("follow_symlinks", &self.follow_symlinks)
+            .field("cross_filesystem", &self.cross_filesystem)
+            .field("strategy_override", &self.strategy_override)
+            .field("progress_interval", &self.progress_interval)
+            .field(
+                "progress_notifier",
+                &self.progress_notifier.as_ref().map(|_| "<configured>"),
+            )
+            .field("progress_byte_trigger", &self.progress_byte_trigger)
+            .finish()
     }
 }
 

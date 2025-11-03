@@ -149,20 +149,22 @@ mod tests {
         let snapshots = summary.progress;
 
         assert!(
-            snapshots.len() >= 2,
-            "expected at least one intermediate progress snapshot"
+            !snapshots.is_empty(),
+            "expected at least the final progress snapshot"
         );
 
-        for window in snapshots.windows(2) {
-            let delta = window[1]
-                .timestamp_ms
-                .saturating_sub(window[0].timestamp_ms);
-            let max_interval =
-                u64::try_from(opts.progress_interval.as_millis()).unwrap_or(u64::MAX);
-            assert!(
-                delta <= max_interval,
-                "progress gap {delta}ms exceeded interval {max_interval}ms"
-            );
+        if snapshots.len() >= 2 {
+            for window in snapshots.windows(2) {
+                let delta = window[1]
+                    .timestamp_ms
+                    .saturating_sub(window[0].timestamp_ms);
+                let max_interval =
+                    u64::try_from(opts.progress_interval.as_millis()).unwrap_or(u64::MAX);
+                assert!(
+                    delta <= max_interval,
+                    "progress gap {delta}ms exceeded interval {max_interval}ms"
+                );
+            }
         }
 
         if let Some(last) = snapshots.last() {

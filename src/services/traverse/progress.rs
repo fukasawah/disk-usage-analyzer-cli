@@ -3,8 +3,14 @@
 use crate::models::ProgressSnapshot;
 use std::time::{Duration, Instant};
 
-const BYTE_TRIGGER: u64 = 1_000_000;
+/// Default time-based interval used when no override is supplied.
+const DEFAULT_INTERVAL: Duration = Duration::from_secs(2);
+/// Default byte delta that forces a progress update when the default interval is used.
+pub const DEFAULT_BYTE_TRIGGER: u64 = 1_000_000;
+/// Minimum duration enforced for interval throttling to avoid busy emissions.
 const MIN_INTERVAL: Duration = Duration::from_millis(100);
+/// Lower bound for byte-triggered emissions to avoid excessively chatty progress.
+const MIN_BYTE_TRIGGER: u64 = 64 * 1024;
 
 /// Time/byte-based throttler governing progress event emission.
 #[derive(Debug)]
@@ -25,18 +31,30 @@ impl ProgressThrottler {
     /// Construct a throttler using the default interval of two seconds.
     #[must_use]
     pub fn new() -> Self {
-        Self::with_interval(Duration::from_secs(2))
+        Self::with_interval(DEFAULT_INTERVAL)
     }
 
     /// Construct a throttler with the supplied minimum interval.
     #[must_use]
     pub fn with_interval(interval: Duration) -> Self {
+        Self::with_interval_and_trigger(interval, DEFAULT_BYTE_TRIGGER)
+    }
+
+    /// Construct a throttler with explicit parameters.
+    #[must_use]
+    pub fn with_interval_and_trigger(interval: Duration, byte_trigger: u64) -> Self {
         Self {
             interval: interval.max(MIN_INTERVAL),
-            byte_trigger: BYTE_TRIGGER,
+            byte_trigger: byte_trigger.max(MIN_BYTE_TRIGGER),
             last_emit: None,
             last_emit_bytes: 0,
         }
+    }
+
+    /// Update the throttling interval while preserving prior emission state.
+    pub fn set_interval(&mut self, interval: Duration, byte_trigger: u64) {
+        self.interval = interval.max(MIN_INTERVAL);
+        self.byte_trigger = byte_trigger.max(MIN_BYTE_TRIGGER);
     }
 
     /// Consider emitting a snapshot using the current traversal counters.
@@ -57,7 +75,13 @@ impl ProgressThrottler {
         let elapsed = now.saturating_duration_since(last_emit);
         let bytes_delta = processed_bytes.saturating_sub(self.last_emit_bytes);
 
-        if elapsed >= self.interval || bytes_delta >= self.byte_trigger {
+        let time_ready = elapsed >= self.interval;
+        let byte_gate = std::cmp::max(self.interval / 2, MIN_INTERVAL);
+        let bytes_ready = self.byte_trigger != u64::MAX
+            && elapsed >= byte_gate
+            && bytes_delta >= self.byte_trigger;
+
+        if time_ready || bytes_ready {
             let throughput = compute_throughput(bytes_delta, elapsed);
 
             self.last_emit = Some(now);

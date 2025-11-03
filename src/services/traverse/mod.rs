@@ -144,7 +144,7 @@ impl TraversalDispatcher {
         }
 
         context.set_strategy(resolved);
-        context.progress_interval = self.progress_interval;
+        context.update_progress_interval(self.progress_interval);
 
         match resolved {
             StrategyKind::Legacy => legacy::traverse_directory(root_ref, context),
