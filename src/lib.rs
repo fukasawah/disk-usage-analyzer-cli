@@ -14,6 +14,8 @@ pub use services::traverse::progress::ProgressThrottler;
 pub use services::traverse::strategy::{StrategyRegistry, TraversalStrategy};
 pub use services::traverse::{StrategyKind, TraversalContext, TraversalDispatcher};
 
+use crate::services::sink::SinkFinish;
+use crate::services::sink::parquet::ParquetStreamSink;
 use crate::services::traverse::progress::DEFAULT_BYTE_TRIGGER;
 use std::path::Path;
 use std::result;
@@ -126,6 +128,7 @@ pub struct Summary {
     pub finished_at: std::time::SystemTime,
     pub strategy: StrategyKind,
     pub progress: Vec<ProgressSnapshot>,
+    pub entry_count: u64,
 }
 
 /// Scan a directory and return a summary
@@ -162,7 +165,12 @@ pub fn scan_summary<P: AsRef<Path>>(root: P, opts: &ScanOptions) -> Result<Summa
     context.finalize_progress();
 
     // Extract entries and errors
-    let (entries, errors, progress, strategy) = context.into_parts();
+    let (sink_finish, progress, strategy) = context.into_parts()?;
+    let SinkFinish {
+        entries,
+        errors,
+        entry_count,
+    } = sink_finish;
 
     let finished_at = std::time::SystemTime::now();
 
@@ -174,5 +182,79 @@ pub fn scan_summary<P: AsRef<Path>>(root: P, opts: &ScanOptions) -> Result<Summa
         finished_at,
         strategy,
         progress,
+        entry_count,
+    })
+}
+
+/// Scan a directory and stream results directly into a Parquet snapshot.
+pub fn scan_to_snapshot<P: AsRef<Path>>(
+    root: P,
+    opts: &ScanOptions,
+    snapshot_path: &str,
+) -> Result<Summary> {
+    let root_path = root.as_ref().to_string_lossy().to_string();
+
+    if !root.as_ref().exists() {
+        return Err(Error::InvalidInput(format!(
+            "Path does not exist: {root_path}"
+        )));
+    }
+
+    if !root.as_ref().is_dir() {
+        return Err(Error::InvalidInput(format!(
+            "Path is not a directory: {root_path}"
+        )));
+    }
+
+    let started_at = std::time::SystemTime::now();
+
+    let sink = ParquetStreamSink::try_new(snapshot_path, None)?;
+    let mut context = services::traverse::TraversalContext::with_sink(
+        opts.clone(),
+        opts.max_depth,
+        Box::new(sink),
+    );
+    let dispatcher = services::traverse::TraversalDispatcher::for_platform(opts);
+
+    let _ = dispatcher.traverse(&root, &mut context)?;
+    context.finalize_progress();
+
+    let finished_at = std::time::SystemTime::now();
+    let strategy_active = context.strategy();
+
+    let meta = SnapshotMeta {
+        scan_root: root_path.clone(),
+        started_at: format!("{started_at:?}"),
+        finished_at: format!("{finished_at:?}"),
+        size_basis: match opts.basis {
+            SizeBasis::Physical => "physical".to_string(),
+            SizeBasis::Logical => "logical".to_string(),
+        },
+        hardlink_policy: match opts.hardlink_policy {
+            HardlinkPolicy::Dedupe => "dedupe".to_string(),
+            HardlinkPolicy::Count => "count".to_string(),
+        },
+        excludes: Vec::new(),
+        strategy: strategy_active.to_string(),
+    };
+
+    context.set_sink_metadata(&meta)?;
+
+    let (sink_finish, progress, strategy) = context.into_parts()?;
+    let SinkFinish {
+        entries,
+        errors,
+        entry_count,
+    } = sink_finish;
+
+    Ok(Summary {
+        root: root_path,
+        entries,
+        errors,
+        started_at,
+        finished_at,
+        strategy,
+        progress,
+        entry_count,
     })
 }

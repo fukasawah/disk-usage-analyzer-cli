@@ -70,7 +70,7 @@ fn posix_traverse(root: &Path, context: &TraversalContext) -> io::Result<u64> {
     let root_metadata = match std::fs::symlink_metadata(root) {
         Ok(meta) => meta,
         Err(err) => {
-            context.record_error(root, &err);
+            context.record_error(root, &err)?;
             return Ok(0);
         }
     };
@@ -120,7 +120,7 @@ fn traverse_directory_fd(
             Ok(entry) => entry,
             Err(err) => {
                 let io_err: std::io::Error = err.into();
-                context.record_error(current, &io_err);
+                context.record_error(current, &io_err)?;
                 continue;
             }
         };
@@ -137,7 +137,7 @@ fn traverse_directory_fd(
         let metadata = match std::fs::symlink_metadata(&child_path) {
             Ok(meta) => meta,
             Err(err) => {
-                context.record_error(&child_path, &err);
+                context.record_error(&child_path, &err)?;
                 continue;
             }
         };
@@ -177,7 +177,7 @@ fn traverse_directory_fd(
                     file_count: 0,
                     dir_count: 0,
                 };
-                context.insert_entry(child_path.clone(), file_entry);
+                context.insert_entry(file_entry)?;
             }
         } else if metadata.is_dir() {
             dir_count = dir_count.saturating_add(1);
@@ -196,7 +196,7 @@ fn traverse_directory_fd(
                 Ok(fd) => fd,
                 Err(err) => {
                     let io_err: std::io::Error = err.into();
-                    context.record_error(&child_path, &io_err);
+                    context.record_error(&child_path, &io_err)?;
                     continue;
                 }
             };
@@ -229,7 +229,7 @@ fn traverse_directory_fd(
         dir_count,
     };
 
-    context.insert_entry(current.to_path_buf(), entry);
+    context.insert_entry(entry)?;
     context.register_directory_progress();
 
     Ok(total_size)

@@ -128,7 +128,7 @@ fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
         eprintln!("Scanning: {}", args.path);
     }
 
-    let summary = match dua::scan_summary(&args.path, &opts) {
+    let summary = match dua::scan_to_snapshot(&args.path, &opts, &snapshot_path) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("Error: {e}");
@@ -141,35 +141,8 @@ fn handle_scan(args: &dua::cli::args::ScanArgs) -> i32 {
     };
 
     if !args.quiet {
-        eprintln!("Found {} entries", summary.entries.len());
-        eprintln!("Saving snapshot to: {snapshot_path}");
-    }
-
-    // Create snapshot metadata
-    let meta = dua::models::SnapshotMeta {
-        scan_root: summary.root.clone(),
-        started_at: format!("{:?}", summary.started_at),
-        finished_at: format!("{:?}", summary.finished_at),
-        size_basis: args.basis.clone(),
-        hardlink_policy: "dedupe".to_string(),
-        excludes: vec![],
-        strategy: summary.strategy.to_string(),
-    };
-
-    // Save snapshot
-    if let Err(e) =
-        dua::io::snapshot::write_snapshot(&snapshot_path, &meta, &summary.entries, &summary.errors)
-    {
-        eprintln!("Error: Failed to save snapshot: {e}");
-        return 4;
-    }
-
-    if !args.quiet {
-        eprintln!(
-            "Snapshot saved: {} ({} entries)",
-            snapshot_path,
-            summary.entries.len()
-        );
+        eprintln!("Found {} entries", summary.entry_count);
+        eprintln!("Snapshot saved: {snapshot_path}");
     }
 
     // Return appropriate exit code
@@ -232,6 +205,7 @@ fn handle_view(args: &dua::cli::args::ViewArgs) -> i32 {
         finished_at: std::time::SystemTime::UNIX_EPOCH, // Placeholder
         strategy,
         progress: Vec::new(),
+        entry_count: all_entries.len() as u64,
     };
 
     // Output

@@ -2,5 +2,6 @@
 
 pub mod aggregate;
 pub mod format;
+pub mod sink;
 pub mod size;
 pub mod traverse;

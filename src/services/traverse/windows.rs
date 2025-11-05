@@ -83,7 +83,7 @@ fn traverse_windows(root: &Path, context: &TraversalContext) -> io::Result<u64> 
     let metadata = match fs::symlink_metadata(root) {
         Ok(meta) => meta,
         Err(err) => {
-            context.record_error(root, &err);
+            context.record_error(root, &err)?;
             return Ok(0);
         }
     };
@@ -107,7 +107,7 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
     let metadata = match fs::symlink_metadata(current) {
         Ok(meta) => meta,
         Err(err) => {
-            context.record_error(current, &err);
+            context.record_error(current, &err)?;
             return Ok(0);
         }
     };
@@ -150,7 +150,7 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
     let maybe_handle = match open_search_handle(&search_wide, find_data.as_mut_ptr()) {
         Ok(handle) => handle,
         Err(io_err) => {
-            context.record_error(current, &io_err);
+            context.record_error(current, &io_err)?;
             return Ok(0);
         }
     };
@@ -194,7 +194,7 @@ fn traverse_directory(current: &Path, depth: u16, context: &TraversalContext) ->
                     };
 
                     if should_record {
-                        context.record_error(current, &io_err);
+                        context.record_error(current, &io_err)?;
                     }
                     break;
                 }
@@ -312,7 +312,7 @@ fn finalize_directory(
         dir_count,
     };
 
-    context.insert_entry(current.to_path_buf(), entry);
+    context.insert_entry(entry)?;
     context.register_directory_progress();
 
     Ok(total_size)
@@ -339,7 +339,7 @@ fn handle_entry(
     let entry_metadata = match fs::symlink_metadata(&child_path) {
         Ok(meta) => meta,
         Err(err) => {
-            context.record_error(&child_path, &err);
+            context.record_error(&child_path, &err)?;
             return Ok(());
         }
     };
@@ -379,7 +379,7 @@ fn handle_entry(
                 file_count: 0,
                 dir_count: 0,
             };
-            context.insert_entry(child_path, entry);
+            context.insert_entry(entry)?;
         }
     } else if entry_metadata.is_dir() {
         *dir_count = dir_count.saturating_add(1);

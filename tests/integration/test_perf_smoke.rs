@@ -141,11 +141,11 @@ mod tests {
 
         if let Some(summary) = last_summary {
             // ensure traversal enumerated expected entry count (directories + files + root)
-            let expected_entries = 200 * 50 + 200 + 1;
+            let expected_entries = 200_u64 * 50 + 200 + 1;
             assert!(
-                summary.entries.len() >= expected_entries,
+                summary.entry_count >= expected_entries,
                 "Expected at least {expected_entries} entries, found {}",
-                summary.entries.len()
+                summary.entry_count
             );
         } else {
             panic!("benchmark loop did not produce a summary");

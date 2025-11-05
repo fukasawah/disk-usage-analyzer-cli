@@ -6,10 +6,12 @@
 use super::StrategyKind;
 use super::progress::ProgressThrottler;
 use crate::models::{DirectoryEntry, ErrorItem, ProgressSnapshot};
-use crate::{HardlinkPolicy, ScanOptions, SizeBasis};
-use std::collections::{HashMap, HashSet};
+use crate::services::sink::{ScanSink, SinkFinish, memory::MemorySink};
+use crate::{HardlinkPolicy, ScanOptions, SizeBasis, SnapshotMeta};
+use std::collections::HashSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::io::{Error as IoError, Result as IoResult};
+use std::path::Path;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -44,8 +46,7 @@ pub struct FileId {
 pub struct TraversalContext {
     root_device: Mutex<Option<u64>>,
     seen_inodes: Mutex<HashSet<FileId>>,
-    entries: Mutex<HashMap<PathBuf, DirectoryEntry>>,
-    errors: Mutex<Vec<ErrorItem>>,
+    sink: Mutex<Option<Box<dyn ScanSink>>>,
     pub options: ScanOptions,
     pub max_depth: Option<u16>,
     strategy: AtomicU8,
@@ -76,13 +77,21 @@ fn decode_strategy(value: u8) -> StrategyKind {
 impl TraversalContext {
     #[must_use]
     pub fn new(options: ScanOptions, max_depth: Option<u16>) -> Self {
+        Self::with_sink(options, max_depth, Box::new(MemorySink::new()))
+    }
+
+    #[must_use]
+    pub fn with_sink(
+        options: ScanOptions,
+        max_depth: Option<u16>,
+        sink: Box<dyn ScanSink>,
+    ) -> Self {
         let interval = options.progress_interval;
         let trigger = options.progress_byte_trigger;
         Self {
             root_device: Mutex::new(None),
             seen_inodes: Mutex::new(HashSet::new()),
-            entries: Mutex::new(HashMap::new()),
-            errors: Mutex::new(Vec::new()),
+            sink: Mutex::new(Some(sink)),
             options,
             max_depth,
             strategy: AtomicU8::new(encode_strategy(StrategyKind::Legacy)),
@@ -95,6 +104,22 @@ impl TraversalContext {
             start_instant: Instant::now(),
             progress_interval: interval,
         }
+    }
+
+    fn with_sink_mut<F, T>(&self, op: F) -> IoResult<T>
+    where
+        F: FnOnce(&mut dyn ScanSink) -> IoResult<T>,
+    {
+        let mut guard = self
+            .sink
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let sink = guard
+            .as_mut()
+            .ok_or_else(|| IoError::other("scan sink detached"))?;
+
+        op(sink.as_mut())
     }
 
     #[must_use]
@@ -188,19 +213,24 @@ impl TraversalContext {
     }
 
     /// Record an error encountered during traversal
-    pub(crate) fn record_error(&self, path: &Path, error: &std::io::Error) {
+    pub(crate) fn record_error(&self, path: &Path, error: &std::io::Error) -> IoResult<()> {
         let code = match error.kind() {
             std::io::ErrorKind::NotFound => "ENOENT",
             std::io::ErrorKind::PermissionDenied => "EACCES",
             _ => "IO",
         };
 
-        let mut errors = self.errors.lock().unwrap();
-        errors.push(ErrorItem {
+        let item = ErrorItem {
             path: path.to_string_lossy().to_string(),
             code: code.to_string(),
             message: error.to_string(),
-        });
+        };
+
+        self.with_sink_mut(|sink| sink.record_error(item))
+    }
+
+    pub fn set_sink_metadata(&self, meta: &SnapshotMeta) -> IoResult<()> {
+        self.with_sink_mut(|sink| sink.set_metadata(meta))
     }
 
     /// Register file progress metrics and consider emitting a snapshot.
@@ -283,40 +313,26 @@ impl TraversalContext {
         }
     }
 
-    pub fn insert_entry(&self, path: PathBuf, entry: DirectoryEntry) {
-        let mut entries = self.entries.lock().unwrap();
-        entries.insert(path, entry);
+    pub fn insert_entry(&self, entry: DirectoryEntry) -> IoResult<()> {
+        self.with_sink_mut(|sink| sink.record_entry(entry))
     }
 
-    #[must_use]
-    pub fn into_parts(
-        self,
-    ) -> (
-        Vec<DirectoryEntry>,
-        Vec<ErrorItem>,
-        Vec<ProgressSnapshot>,
-        StrategyKind,
-    ) {
+    pub fn into_parts(self) -> IoResult<(SinkFinish, Vec<ProgressSnapshot>, StrategyKind)> {
         let strategy = decode_strategy(self.strategy.load(Ordering::Relaxed));
 
-        let entries = self
-            .entries
+        let sink_finish: SinkFinish = self
+            .sink
             .into_inner()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .into_values()
-            .collect();
-
-        let errors = self
-            .errors
-            .into_inner()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+            .ok_or_else(|| IoError::other("scan sink missing"))?
+            .finish()?;
 
         let progress = self
             .progress_events
             .into_inner()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
 
-        (entries, errors, progress, strategy)
+        Ok((sink_finish, progress, strategy))
     }
 }
 
@@ -421,7 +437,7 @@ pub fn traverse_directory<P: AsRef<Path>>(
     let root_metadata = match fs::symlink_metadata(root) {
         Ok(m) => m,
         Err(e) => {
-            context.record_error(root, &e);
+            context.record_error(root, &e)?;
             return Ok(0);
         }
     };
@@ -448,7 +464,7 @@ fn traverse_recursive(
     let metadata = match fs::symlink_metadata(current) {
         Ok(m) => m,
         Err(e) => {
-            context.record_error(current, &e);
+            context.record_error(current, &e)?;
             return Ok(0);
         }
     };
@@ -481,7 +497,7 @@ fn traverse_recursive(
         let entries = match fs::read_dir(current) {
             Ok(e) => e,
             Err(e) => {
-                context.record_error(current, &e);
+                context.record_error(current, &e)?;
                 return Ok(0);
             }
         };
@@ -490,7 +506,7 @@ fn traverse_recursive(
             let entry = match entry {
                 Ok(e) => e,
                 Err(e) => {
-                    context.record_error(current, &e);
+                    context.record_error(current, &e)?;
                     continue;
                 }
             };
@@ -499,7 +515,7 @@ fn traverse_recursive(
             let entry_metadata = match entry.metadata() {
                 Ok(m) => m,
                 Err(e) => {
-                    context.record_error(&entry_path, &e);
+                    context.record_error(&entry_path, &e)?;
                     continue;
                 }
             };
@@ -528,7 +544,7 @@ fn traverse_recursive(
                         dir_count: 0,
                     };
                     log::debug!("File entry: {} (size: {})", file_entry.path, file_size);
-                    context.insert_entry(entry_path, file_entry);
+                    context.insert_entry(file_entry)?;
                 }
             } else if entry_metadata.is_dir() {
                 let subdir_size = traverse_recursive(&entry_path, depth + 1, context)?;
@@ -553,7 +569,7 @@ fn traverse_recursive(
             "Directory entry: {normalized_path} (size: {total_size}, files: {file_count}, dirs: {dir_count}, depth: {depth})"
         );
 
-        context.insert_entry(current.to_path_buf(), entry);
+        context.insert_entry(entry)?;
         context.register_directory_progress();
 
         Ok(total_size)

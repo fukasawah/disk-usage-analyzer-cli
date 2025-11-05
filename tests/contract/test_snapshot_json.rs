@@ -65,6 +65,7 @@ mod tests {
                 estimated_completion_ratio: Some(0.5),
                 recent_throughput_bytes_per_sec: Some(512),
             }],
+            entry_count: entries.len() as u64,
         };
 
         let summary_json = format_json(&summary, &summary.entries);
